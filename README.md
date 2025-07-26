@@ -110,12 +110,8 @@ uv run python html_generator.py
 - **Clan Activity**: Member donations, activity status
 - **Historical Trends**: Battle history over time
 
-## 🎨 Responsive Design
-
-The web interface adapts to different screen sizes:
-- **Desktop**: Full tables with all data
-- **Mobile**: Card-based layouts for easier viewing
-- **Touch-friendly**: Optimized for mobile interaction
+## Caveats
+The API only fetches your last 20ish battles, so metrics like win rate are calculated on the data since it's been collected, not your actual statistics
 
 ## 🤝 Contributing
 
