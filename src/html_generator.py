@@ -101,10 +101,12 @@ class GitHubPagesHTMLGenerator:
         normal_path = f"cards/normal_cards/{filename}.png"
         evolution_path = f"cards/evolution_cards/{filename}.png"
         
-        # Check if files exist in the cards directory
-        if os.path.exists(f"cards/normal_cards/{filename}.png"):
+        # Check if files exist (look in parent directory when running from src/)
+        cards_base = "../cards" if os.path.exists("../cards") else "cards"
+        
+        if os.path.exists(f"{cards_base}/normal_cards/{filename}.png"):
             return normal_path
-        elif os.path.exists(f"cards/evolution_cards/{filename}.png"):
+        elif os.path.exists(f"{cards_base}/evolution_cards/{filename}.png"):
             return evolution_path
         else:
             # Fallback to placeholder
