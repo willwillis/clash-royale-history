@@ -1,0 +1,89 @@
+name: Update Clash Royale Analytics
+
+on:
+  # Run every hour
+  schedule:
+    - cron: '0 * * * *'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+  
+  # Run on push to main branch (for testing)
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write  # Need write to commit database changes
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Install dependencies
+      run: uv sync
+    
+    - name: Update battle data
+      env:
+        CR_API_TOKEN: ${{ secrets.CR_API_TOKEN }}
+        CR_PLAYER_TAG: ${{ secrets.CR_PLAYER_TAG }}
+      run: |
+        cd src
+        uv run python analyzer.py
+    
+    - name: Generate HTML report
+      run: |
+        cd src
+        uv run python html_generator.py
+        
+    - name: Commit database changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add src/clash_royale.db
+        git diff --staged --quiet || git commit -m "Update battle data - $(date)"
+        git push
+        
+    - name: Move files for GitHub Pages
+      run: |
+        # Move generated index.html to root
+        mv src/index.html ./
+        
+        # Ensure cards directory exists (if we have card images)
+        mkdir -p cards
+        
+        # Copy any additional assets
+        if [ -d "assets" ]; then
+          cp -r assets/* ./
+        fi
+    
+    - name: Upload artifacts for Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: '.'
+        
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: update-data
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
