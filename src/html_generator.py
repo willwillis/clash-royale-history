@@ -158,7 +158,8 @@ class GitHubPagesHTMLGenerator:
             'losses': battle_stats[2] or 0,
             'draws': battle_stats[3] or 0,
             'total_trophy_change': battle_stats[4] or 0,
-            'last_battle': battle_stats[5]
+            'last_battle': battle_stats[5],
+            'first_battle': battle_stats[6]
         }
     
     def get_deck_performance(self, limit: int = 10) -> List[Dict]:
@@ -279,6 +280,24 @@ class GitHubPagesHTMLGenerator:
                 return f"{minutes} minutes ago"
             else:
                 return "just now"
+        except:
+            return "unknown"
+    
+    def format_date(self, timestamp: str) -> str:
+        """Format timestamp as readable date"""
+        if not timestamp:
+            return "unknown"
+            
+        try:
+            if 'T' in timestamp:
+                if timestamp.endswith('Z'):
+                    dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                else:
+                    dt = datetime.fromisoformat(timestamp)
+            else:
+                dt = datetime.fromisoformat(timestamp)
+                
+            return dt.strftime('%B %d, %Y')
         except:
             return "unknown"
     
@@ -906,6 +925,10 @@ class GitHubPagesHTMLGenerator:
             <div class="player-info">
                 <h2>{stats['name']} ({stats['player_tag']})</h2>
                 <p>Clan: {stats['clan_name'] or 'None'} | Level: {stats['level']}</p>
+                <p style="font-style: italic; color: #666; margin-top: 10px;">
+                    <strong>Player statistics since {self.format_date(stats['first_battle'])}</strong><br>
+                    Statistics are calculated from battles collected since data tracking began and do not reflect lifetime totals.
+                </p>
             </div>
             <div class="player-stats">
                 <div class="stat-card">
