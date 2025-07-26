@@ -136,7 +136,8 @@ class GitHubPagesHTMLGenerator:
                 SUM(CASE WHEN result = 'defeat' THEN 1 ELSE 0 END) as losses,
                 SUM(CASE WHEN result = 'draw' THEN 1 ELSE 0 END) as draws,
                 SUM(COALESCE(trophy_change, 0)) as total_trophy_change,
-                MAX(battle_time) as last_battle
+                MAX(battle_time) as last_battle,
+                MIN(battle_time) as first_battle
             FROM battles
         """)
         battle_stats = cursor.fetchone()
