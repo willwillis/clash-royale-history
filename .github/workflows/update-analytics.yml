@@ -59,9 +59,11 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add src/clash_royale.db
-        git pull origin main --rebase
-        git diff --staged --quiet || git commit -m "Update battle data - $(date)"
-        git push origin main
+        if ! git diff --staged --quiet; then
+          git commit -m "Update battle data - $(date)"
+          git pull origin main --rebase || (git rebase --abort && git pull origin main --no-rebase)
+          git push origin main
+        fi
         
     - name: Move files for GitHub Pages
       run: |
