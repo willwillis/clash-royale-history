@@ -2,6 +2,8 @@
 
 Automated Clash Royale battle analytics published to GitHub Pages, updated hourly via GitHub Actions.
 
+![Clash Royale Analytics Screenshot](cards/screenshot.png)
+
 ## 🚀 Features
 
 - **Automated Data Collection**: Fetches battle data every hour
