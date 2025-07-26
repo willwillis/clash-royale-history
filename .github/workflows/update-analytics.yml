@@ -68,8 +68,10 @@ jobs:
         # Move generated index.html to root
         mv src/index.html ./
         
-        # Ensure cards directory exists (if we have card images)
-        mkdir -p cards
+        # Copy card images if they exist
+        if [ -d "cards" ]; then
+          cp -r cards ./
+        fi
         
         # Copy any additional assets
         if [ -d "assets" ]; then
