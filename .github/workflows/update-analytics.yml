@@ -68,11 +68,7 @@ jobs:
         # Move generated index.html to root
         mv src/index.html ./
         
-        # Copy card images if they exist
-        if [ -d "cards" ]; then
-          cp -r cards ./
-        fi
-        
+        # Cards directory is already in root, no need to copy
         # Copy any additional assets
         if [ -d "assets" ]; then
           cp -r assets/* ./
