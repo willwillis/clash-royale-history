@@ -16,7 +16,7 @@ class ClashRoyaleAnalyzer:
     def __init__(self, api_token: str):
         self.api_token = api_token
         self.db_path = "clash_royale.db"
-        self.base_url = "https://api.clashroyale.com/v1"
+        self.base_url = "https://proxy.royaleapi.dev/v1"
         self.headers = {
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json"
