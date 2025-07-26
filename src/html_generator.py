@@ -466,16 +466,425 @@ class GitHubPagesHTMLGenerator:
                           clan_table_html, clan_cards_html) -> str:
         """Generate the complete HTML document"""
         
-        # Include the same CSS as before but optimized for GitHub Pages
+        # Complete CSS styles for GitHub Pages
         css_styles = """
-        /* Same responsive CSS styles as the previous version */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333; line-height: 1.6;
+            color: #333;
+            line-height: 1.6;
         }
-        /* ... (include all the responsive CSS from the previous version) ... */
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .header h1 {
+            color: #4a5568;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        
+        .player-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #4299e1;
+        }
+        
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .section h2 {
+            color: #2d3748;
+            margin-bottom: 25px;
+            border-bottom: 3px solid #4299e1;
+            padding-bottom: 10px;
+        }
+        
+        .deck-item {
+            background: rgba(247, 250, 252, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .deck-header {
+            margin-bottom: 15px;
+        }
+        
+        .deck-header h3 {
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        
+        .deck-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .stat {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        .deck-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .card-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-image {
+            width: 60px;
+            height: 72px;
+            object-fit: contain;
+            border-radius: 5px;
+        }
+        
+        .card-name {
+            font-size: 0.8em;
+            margin-top: 5px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        th {
+            background: #4299e1;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .battle-victory {
+            background-color: rgba(72, 187, 120, 0.1);
+        }
+        
+        .battle-defeat {
+            background-color: rgba(245, 101, 101, 0.1);
+        }
+        
+        .battle-draw {
+            background-color: rgba(237, 137, 54, 0.1);
+        }
+        
+        .result-victory {
+            color: #38a169;
+            font-weight: bold;
+        }
+        
+        .result-defeat {
+            color: #e53e3e;
+            font-weight: bold;
+        }
+        
+        .result-draw {
+            color: #ed8936;
+            font-weight: bold;
+        }
+        
+        .current-player {
+            background-color: rgba(66, 153, 225, 0.2);
+            font-weight: bold;
+        }
+        
+        .role-leader {
+            color: #d69e2e;
+            font-weight: bold;
+        }
+        
+        .role-co-leader {
+            color: #3182ce;
+            font-weight: bold;
+        }
+        
+        .role-elder {
+            color: #38a169;
+            font-weight: bold;
+        }
+        
+        .role-member {
+            color: #718096;
+        }
+        
+        /* Mobile Battle Cards */
+        .battle-cards {
+            display: none;
+        }
+        
+        .battle-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #e2e8f0;
+        }
+        
+        .battle-card.battle-victory {
+            border-left-color: #38a169;
+            background-color: rgba(72, 187, 120, 0.05);
+        }
+        
+        .battle-card.battle-defeat {
+            border-left-color: #e53e3e;
+            background-color: rgba(245, 101, 101, 0.05);
+        }
+        
+        .battle-card.battle-draw {
+            border-left-color: #ed8936;
+            background-color: rgba(237, 137, 54, 0.05);
+        }
+        
+        .battle-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .battle-result {
+            font-size: 1.1em;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        .battle-time {
+            color: #718096;
+            font-size: 0.9em;
+        }
+        
+        .battle-card-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .battle-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .battle-info span {
+            color: #718096;
+            font-size: 0.9em;
+        }
+        
+        .battle-stats {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        
+        .crown-count, .trophy-change {
+            padding: 3px 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+        }
+        
+        /* Mobile Clan Member Cards */
+        .clan-member-cards {
+            display: none;
+        }
+        
+        .clan-member-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #e2e8f0;
+        }
+        
+        .current-player-card {
+            border-left-color: #4299e1;
+            background: rgba(66, 153, 225, 0.1);
+        }
+        
+        .member-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .member-name {
+            font-size: 1.1em;
+            color: #2d3748;
+        }
+        
+        .member-role {
+            padding: 3px 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .member-card-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .member-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .trophy-count, .donation-stats {
+            padding: 3px 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+        }
+        
+        .member-activity {
+            text-align: right;
+        }
+        
+        .last-seen {
+            color: #718096;
+            font-size: 0.9em;
+            padding: 3px 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 30px;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 768px) {
+            .deck-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .player-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .deck-stats {
+                flex-direction: column;
+            }
+            
+            /* Hide tables on mobile, show cards */
+            .desktop-table {
+                display: none;
+            }
+            
+            .battle-cards {
+                display: block;
+            }
+            
+            .clan-member-cards {
+                display: block;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .desktop-table {
+                display: block;
+            }
+            
+            .battle-cards {
+                display: none;
+            }
+            
+            .clan-member-cards {
+                display: none;
+            }
+        }
         """
         
         return f"""
