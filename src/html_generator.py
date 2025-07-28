@@ -250,6 +250,50 @@ class GitHubPagesHTMLGenerator:
         conn.close()
         return members
     
+    def get_daily_battle_stats(self, days_limit: int = 30) -> List[Dict]:
+        """Get daily wins/losses aggregation for histogram, including days with no battles"""
+        if not os.path.exists(self.db_path):
+            return []
+            
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # First, create a complete date range for the last N days
+        cursor.execute("""
+            WITH RECURSIVE date_range(date) AS (
+                SELECT DATE('now', '-' || ? || ' days')
+                UNION ALL
+                SELECT DATE(date, '+1 day')
+                FROM date_range
+                WHERE date < DATE('now')
+            )
+            SELECT 
+                dr.date as battle_date,
+                COALESCE(SUM(CASE WHEN b.result = 'victory' THEN 1 ELSE 0 END), 0) as wins,
+                COALESCE(SUM(CASE WHEN b.result = 'defeat' THEN 1 ELSE 0 END), 0) as losses,
+                COALESCE(SUM(CASE WHEN b.result = 'draw' THEN 1 ELSE 0 END), 0) as draws,
+                COALESCE(COUNT(b.id), 0) as total_battles
+            FROM date_range dr
+            LEFT JOIN battles b ON 
+                SUBSTR(b.battle_time, 1, 4) || '-' || SUBSTR(b.battle_time, 5, 2) || '-' || SUBSTR(b.battle_time, 7, 2) = dr.date
+                AND b.battle_time IS NOT NULL
+            GROUP BY dr.date
+            ORDER BY dr.date ASC
+        """, (days_limit - 1,))  # -1 because we include today
+        
+        daily_stats = []
+        for row in cursor.fetchall():
+            daily_stats.append({
+                'date': row[0],
+                'wins': row[1] or 0,
+                'losses': row[2] or 0,
+                'draws': row[3] or 0,
+                'total_battles': row[4] or 0
+            })
+        
+        conn.close()
+        return daily_stats
+    
     def format_time_ago(self, timestamp: str) -> str:
         """Format timestamp as time ago"""
         if not timestamp or timestamp == 'never':
@@ -320,12 +364,83 @@ class GitHubPagesHTMLGenerator:
         
         return f'<div class="deck-cards">{cards_html}</div>'
     
+    def generate_daily_histogram_html(self, daily_stats: List[Dict]) -> str:
+        """Generate HTML for daily wins/losses stacked histogram"""
+        if not daily_stats:
+            return "<p>No daily battle data available for histogram.</p>"
+        
+        # Find max battles for scaling
+        max_battles = max((day['total_battles'] for day in daily_stats), default=1)
+        
+        histogram_html = '<div class="daily-histogram">'
+        
+        for day in daily_stats:
+            wins = day['wins']
+            losses = day['losses']
+            draws = day['draws']
+            total = day['total_battles']
+            date = day['date']
+            
+            # Handle zero-battle days
+            if total == 0:
+                # Show empty day with minimal height and special styling
+                histogram_html += f'''
+                    <div class="histogram-bar histogram-bar-empty" style="height: 5px;" title="{date}: No battles played">
+                        <div class="bar-segment bar-empty" style="height: 100%;"></div>
+                        <div class="bar-date">{date[-2:]}</div>
+                    </div>
+                '''
+            else:
+                # Calculate percentages for stacking
+                win_height = (wins / total) * 100
+                loss_height = (losses / total) * 100
+                draw_height = (draws / total) * 100
+                
+                # Scale the bar height relative to max battles
+                bar_scale = (total / max_battles) * 100
+                
+                histogram_html += f'''
+                    <div class="histogram-bar" style="height: {bar_scale}%;" title="{date}: {wins}W/{losses}L/{draws}D ({total} total)">
+                        <div class="bar-segment bar-wins" style="height: {win_height}%;"></div>
+                        <div class="bar-segment bar-losses" style="height: {loss_height}%;"></div>
+                        <div class="bar-segment bar-draws" style="height: {draw_height}%;"></div>
+                        <div class="bar-date">{date[-2:]}</div>
+                    </div>
+                '''
+        
+        histogram_html += '</div>'
+        
+        # Add legend
+        legend_html = '''
+            <div class="histogram-legend">
+                <div class="legend-item">
+                    <span class="legend-color legend-wins"></span>
+                    <span>Wins</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color legend-losses"></span>
+                    <span>Losses</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color legend-draws"></span>
+                    <span>Draws</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color legend-empty"></span>
+                    <span>No battles</span>
+                </div>
+            </div>
+        '''
+        
+        return histogram_html + legend_html
+    
     def generate_html_report(self) -> str:
         """Generate complete HTML report for GitHub Pages"""
         stats = self.get_player_stats()
         decks = self.get_deck_performance(10)
         battles = self.get_recent_battles(15)
         clan_members = self.get_clan_members()
+        daily_stats = self.get_daily_battle_stats(30)
         
         if not stats:
             return self.generate_error_page()
@@ -442,9 +557,12 @@ class GitHubPagesHTMLGenerator:
                 </div>
             """
         
+        # Generate daily histogram
+        daily_histogram_html = self.generate_daily_histogram_html(daily_stats)
+        
         return self.generate_full_html(stats, win_rate, deck_performance_html, 
                                      battles_table_html, battles_cards_html,
-                                     clan_table_html, clan_cards_html)
+                                     clan_table_html, clan_cards_html, daily_histogram_html)
     
     def generate_error_page(self) -> str:
         """Generate error page when no data is available"""
@@ -485,7 +603,7 @@ class GitHubPagesHTMLGenerator:
     
     def generate_full_html(self, stats, win_rate, deck_performance_html, 
                           battles_table_html, battles_cards_html,
-                          clan_table_html, clan_cards_html) -> str:
+                          clan_table_html, clan_cards_html, daily_histogram_html) -> str:
         """Generate the complete HTML document"""
         
         # Complete CSS styles for GitHub Pages
@@ -855,6 +973,110 @@ class GitHubPagesHTMLGenerator:
             font-size: 0.9em;
         }
         
+        /* Daily Histogram Styles */
+        .daily-histogram {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .histogram-bar {
+            flex: 1;
+            max-width: 25px;
+            margin: 0 2px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+        
+        .histogram-bar:hover {
+            opacity: 0.8;
+        }
+        
+        .bar-segment {
+            width: 100%;
+            border-radius: 2px 2px 0 0;
+        }
+        
+        .bar-wins {
+            background: linear-gradient(180deg, #48bb78, #38a169);
+        }
+        
+        .bar-losses {
+            background: linear-gradient(180deg, #f56565, #e53e3e);
+        }
+        
+        .bar-draws {
+            background: linear-gradient(180deg, #ed8936, #dd6b20);
+        }
+        
+        .bar-date {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8em;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .histogram-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #4a5568;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        .legend-wins {
+            background: linear-gradient(180deg, #48bb78, #38a169);
+        }
+        
+        .legend-losses {
+            background: linear-gradient(180deg, #f56565, #e53e3e);
+        }
+        
+        .legend-draws {
+            background: linear-gradient(180deg, #ed8936, #dd6b20);
+        }
+        
+        .histogram-bar-empty {
+            opacity: 0.3;
+        }
+        
+        .bar-empty {
+            background: linear-gradient(180deg, #cbd5e0, #a0aec0);
+            border: 1px dashed #718096;
+        }
+        
+        .legend-empty {
+            background: linear-gradient(180deg, #cbd5e0, #a0aec0);
+            border: 1px dashed #718096;
+        }
+        
         @media (max-width: 768px) {
             .deck-cards {
                 grid-template-columns: repeat(2, 1fr);
@@ -891,6 +1113,25 @@ class GitHubPagesHTMLGenerator:
             
             .header {
                 padding: 20px;
+            }
+            
+            .daily-histogram {
+                height: 150px;
+                padding: 15px;
+            }
+            
+            .histogram-bar {
+                max-width: 15px;
+                margin: 0 1px;
+            }
+            
+            .bar-date {
+                font-size: 0.7em;
+                bottom: -20px;
+            }
+            
+            .histogram-legend {
+                gap: 15px;
             }
         }
         
@@ -955,6 +1196,14 @@ class GitHubPagesHTMLGenerator:
                     <small>Total from battles</small>
                 </div>
             </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Daily Battle Activity Log</h2>
+            <p style="color: #666; margin-bottom: 15px; font-style: italic;">
+                Daily battle history over the last 30 days. Green = wins, red = losses, orange = draws, gray = no battles. Hover for details.
+            </p>
+            {daily_histogram_html}
         </div>
 
         <div class="section">
