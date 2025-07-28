@@ -58,10 +58,10 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add src/clash_royale.db
+        git add src/clash_royale.db src/index.html
         if ! git diff --staged --quiet; then
           git commit -m "Update battle data - $(date)"
-          git pull origin main --rebase || (git rebase --abort && git pull origin main --no-rebase)
+          git pull origin main --rebase || (git stash && git pull origin main --rebase && git stash pop) || (git rebase --abort && git pull origin main --no-rebase)
           git push origin main
         fi
         
