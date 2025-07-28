@@ -8,9 +8,9 @@ on:
   # Allow manual triggering
   workflow_dispatch:
   
-  # Run on push to main branch (for testing)
+  # Run on push to main or clan-tracking branch (for testing)
   push:
-    branches: [ main ]
+    branches: [ main, clan-tracking ]
 
 permissions:
   contents: write  # Need write to commit database changes
@@ -62,7 +62,7 @@ jobs:
         if ! git diff --staged --quiet; then
           git commit -m "Update battle data - $(date)"
           # Force push data updates - GitHub Actions is authoritative for data
-          git push origin main --force-with-lease
+          git push origin HEAD --force-with-lease
         fi
         
     - name: Move files for GitHub Pages
