@@ -294,6 +294,94 @@ class GitHubPagesHTMLGenerator:
         conn.close()
         return daily_stats
     
+    def get_clan_rankings_data(self, days_limit: int = 7) -> List[Dict]:
+        """Get latest clan rankings with progression data"""
+        if not os.path.exists(self.db_path):
+            return []
+            
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # Get latest rankings
+        cursor.execute("""
+            SELECT 
+                crh.player_tag,
+                crh.name,
+                crh.clan_rank,
+                crh.trophies,
+                crh.donations,
+                crh.donations_received,
+                crh.trophy_change,
+                crh.donation_change,
+                crh.recorded_at,
+                cm.role,
+                cm.last_seen
+            FROM clan_rankings_history crh
+            LEFT JOIN clan_members cm ON crh.player_tag = cm.player_tag
+            WHERE crh.recorded_at = (
+                SELECT MAX(recorded_at) 
+                FROM clan_rankings_history 
+                WHERE player_tag = crh.player_tag
+            )
+            ORDER BY crh.clan_rank ASC
+        """)
+        
+        rankings = []
+        for row in cursor.fetchall():
+            rankings.append({
+                'player_tag': row[0],
+                'name': row[1],
+                'clan_rank': row[2],
+                'trophies': row[3] or 0,
+                'donations': row[4] or 0,
+                'donations_received': row[5] or 0,
+                'trophy_change': row[6] or 0,
+                'donation_change': row[7] or 0,
+                'recorded_at': row[8],
+                'role': row[9] or 'member',
+                'last_seen': row[10]
+            })
+        
+        conn.close()
+        return rankings
+    
+    def get_player_clan_progression(self, player_tag: str, days_limit: int = 30) -> List[Dict]:
+        """Get specific player's clan ranking progression over time"""
+        if not os.path.exists(self.db_path):
+            return []
+            
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                DATE(recorded_at) as date,
+                clan_rank,
+                trophies,
+                trophy_change,
+                donations,
+                donation_change
+            FROM clan_rankings_history 
+            WHERE player_tag = ?
+                AND DATE(recorded_at) >= DATE('now', '-' || ? || ' days')
+            ORDER BY recorded_at DESC
+            LIMIT ?
+        """, (player_tag, days_limit, days_limit))
+        
+        progression = []
+        for row in cursor.fetchall():
+            progression.append({
+                'date': row[0],
+                'clan_rank': row[1],
+                'trophies': row[2] or 0,
+                'trophy_change': row[3] or 0,
+                'donations': row[4] or 0,
+                'donation_change': row[5] or 0
+            })
+        
+        conn.close()
+        return progression
+    
     def format_time_ago(self, timestamp: str) -> str:
         """Format timestamp as time ago"""
         if not timestamp or timestamp == 'never':
@@ -434,6 +522,74 @@ class GitHubPagesHTMLGenerator:
         
         return histogram_html + legend_html
     
+    def generate_clan_rankings_html(self, clan_rankings: List[Dict], player_name: str) -> str:
+        """Generate HTML for clan rankings with progression indicators"""
+        if not clan_rankings:
+            return "<p>No clan rankings data available.</p>"
+        
+        rankings_html = '<div class="clan-rankings">'
+        
+        for member in clan_rankings:
+            is_current_player = member['name'] == player_name
+            row_class = "current-player-ranking" if is_current_player else ""
+            
+            # Trophy change indicator
+            trophy_change = member['trophy_change']
+            trophy_indicator = ""
+            if trophy_change > 0:
+                trophy_indicator = f'<span class="trophy-up">+{trophy_change}</span>'
+            elif trophy_change < 0:
+                trophy_indicator = f'<span class="trophy-down">{trophy_change}</span>'
+            else:
+                trophy_indicator = '<span class="trophy-neutral">0</span>'
+            
+            # Donation change indicator
+            donation_change = member['donation_change']
+            donation_indicator = ""
+            if donation_change > 0:
+                donation_indicator = f'<span class="donation-up">+{donation_change}</span>'
+            elif donation_change < 0:
+                donation_indicator = f'<span class="donation-down">{donation_change}</span>'
+            else:
+                donation_indicator = '<span class="donation-neutral">0</span>'
+            
+            role_class = {
+                'leader': 'leader',
+                'coLeader': 'co-leader', 
+                'elder': 'elder',
+                'member': 'member'
+            }.get(member['role'], 'member')
+            
+            role_display = member['role'].replace('coLeader', 'Co-Leader')
+            
+            rankings_html += f'''
+                <div class="ranking-item {row_class}">
+                    <div class="ranking-position">#{member['clan_rank']}</div>
+                    <div class="ranking-info">
+                        <div class="ranking-header">
+                            <span class="member-name">{member['name']}</span>
+                            <span class="role-{role_class} member-role">{role_display}</span>
+                        </div>
+                        <div class="ranking-stats">
+                            <div class="stat-group">
+                                <span class="trophy-count">🏆 {member['trophies']:,}</span>
+                                {trophy_indicator}
+                            </div>
+                            <div class="stat-group">
+                                <span class="donation-count">📦 {member['donations']}↑ {member['donations_received']}↓</span>
+                                {donation_indicator}
+                            </div>
+                            <div class="last-seen-info">
+                                🕒 {self.format_time_ago(member['last_seen'])}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            '''
+        
+        rankings_html += '</div>'
+        return rankings_html
+    
     def generate_html_report(self) -> str:
         """Generate complete HTML report for GitHub Pages"""
         stats = self.get_player_stats()
@@ -441,6 +597,7 @@ class GitHubPagesHTMLGenerator:
         battles = self.get_recent_battles(15)
         clan_members = self.get_clan_members()
         daily_stats = self.get_daily_battle_stats(30)
+        clan_rankings = self.get_clan_rankings_data()
         
         if not stats:
             return self.generate_error_page()
@@ -557,12 +714,13 @@ class GitHubPagesHTMLGenerator:
                 </div>
             """
         
-        # Generate daily histogram
+        # Generate daily histogram and clan rankings
         daily_histogram_html = self.generate_daily_histogram_html(daily_stats)
+        clan_rankings_html = self.generate_clan_rankings_html(clan_rankings, stats['name'])
         
         return self.generate_full_html(stats, win_rate, deck_performance_html, 
                                      battles_table_html, battles_cards_html,
-                                     clan_table_html, clan_cards_html, daily_histogram_html)
+                                     clan_table_html, clan_cards_html, daily_histogram_html, clan_rankings_html)
     
     def generate_error_page(self) -> str:
         """Generate error page when no data is available"""
@@ -603,7 +761,7 @@ class GitHubPagesHTMLGenerator:
     
     def generate_full_html(self, stats, win_rate, deck_performance_html, 
                           battles_table_html, battles_cards_html,
-                          clan_table_html, clan_cards_html, daily_histogram_html) -> str:
+                          clan_table_html, clan_cards_html, daily_histogram_html, clan_rankings_html) -> str:
         """Generate the complete HTML document"""
         
         # Complete CSS styles for GitHub Pages
@@ -1077,6 +1235,105 @@ class GitHubPagesHTMLGenerator:
             border: 1px dashed #718096;
         }
         
+        /* Clan Rankings Styles */
+        .clan-rankings {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+        
+        .ranking-item:hover {
+            transform: translateY(-2px);
+        }
+        
+        .current-player-ranking {
+            background: rgba(66, 153, 225, 0.15);
+            border-left: 4px solid #4299e1;
+            font-weight: bold;
+        }
+        
+        .ranking-position {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4299e1;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .ranking-info {
+            flex: 1;
+            margin-left: 20px;
+        }
+        
+        .ranking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .ranking-stats {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .stat-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .trophy-up {
+            color: #38a169;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .trophy-down {
+            color: #e53e3e;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .trophy-neutral {
+            color: #718096;
+            font-size: 0.9em;
+        }
+        
+        .donation-up {
+            color: #3182ce;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .donation-down {
+            color: #e53e3e;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .donation-neutral {
+            color: #718096;
+            font-size: 0.9em;
+        }
+        
+        .last-seen-info {
+            color: #718096;
+            font-size: 0.9em;
+        }
+        
         @media (max-width: 768px) {
             .deck-cards {
                 grid-template-columns: repeat(2, 1fr);
@@ -1132,6 +1389,18 @@ class GitHubPagesHTMLGenerator:
             
             .histogram-legend {
                 gap: 15px;
+            }
+            
+            .ranking-stats {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .ranking-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
             }
         }
         
@@ -1220,6 +1489,14 @@ class GitHubPagesHTMLGenerator:
                 </table>
             </div>
             <div class="battle-cards">{battles_cards_html}</div>
+        </div>
+
+        <div class="section">
+            <h2>🏆 Clan Rankings & Progression</h2>
+            <p style="color: #666; margin-bottom: 15px; font-style: italic;">
+                Current clan trophy rankings with recent changes. Green = trophy gains, red = trophy losses.
+            </p>
+            {clan_rankings_html}
         </div>
 
         <div class="section">

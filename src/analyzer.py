@@ -85,6 +85,26 @@ class ClashRoyaleAnalyzer:
             )
         """)
         
+        # Clan rankings history table for tracking progression
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS clan_rankings_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                player_tag TEXT,
+                name TEXT,
+                clan_rank INTEGER,
+                trophies INTEGER,
+                donations INTEGER,
+                donations_received INTEGER,
+                trophy_change INTEGER,
+                donation_change INTEGER,
+                clan_tag TEXT,
+                clan_name TEXT,
+                recorded_at TEXT,
+                FOREIGN KEY (player_tag) REFERENCES players (player_tag),
+                UNIQUE(player_tag, recorded_at)
+            )
+        """)
+        
         # Deck performance view
         cursor.execute("""
             CREATE VIEW IF NOT EXISTS deck_performance AS
@@ -201,6 +221,68 @@ class ClashRoyaleAnalyzer:
         conn.commit()
         conn.close()
     
+    def save_clan_rankings_history(self, clan_data: Dict):
+        """Save clan rankings progression to track member performance over time"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        clan_tag = clan_data['tag']
+        clan_name = clan_data['name']
+        current_time = datetime.now().isoformat()
+        
+        # Sort members by trophies to get rankings
+        members = clan_data.get('memberList', [])
+        members_sorted = sorted(members, key=lambda x: x.get('trophies', 0), reverse=True)
+        
+        for rank, member in enumerate(members_sorted, 1):
+            player_tag = member['tag']
+            
+            # Get previous data for calculating changes
+            cursor.execute("""
+                SELECT trophies, donations 
+                FROM clan_rankings_history 
+                WHERE player_tag = ? 
+                ORDER BY recorded_at DESC 
+                LIMIT 1
+            """, (player_tag,))
+            
+            previous_data = cursor.fetchone()
+            current_trophies = member.get('trophies', 0)
+            current_donations = member.get('donations', 0)
+            
+            trophy_change = 0
+            donation_change = 0
+            
+            if previous_data:
+                trophy_change = current_trophies - (previous_data[0] or 0)
+                donation_change = current_donations - (previous_data[1] or 0)
+            
+            try:
+                cursor.execute("""
+                    INSERT OR IGNORE INTO clan_rankings_history 
+                    (player_tag, name, clan_rank, trophies, donations, donations_received,
+                     trophy_change, donation_change, clan_tag, clan_name, recorded_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    player_tag,
+                    member['name'],
+                    rank,
+                    current_trophies,
+                    current_donations,
+                    member.get('donationsReceived', 0),
+                    trophy_change,
+                    donation_change,
+                    clan_tag,
+                    clan_name,
+                    current_time
+                ))
+            except sqlite3.Error as e:
+                print(f"Error inserting clan ranking for {member['name']}: {e}")
+                continue
+        
+        conn.commit()
+        conn.close()
+    
     def format_deck(self, cards: List[Dict]) -> str:
         """Format deck cards as a sorted string for consistent comparison"""
         card_names = sorted([card['name'] for card in cards])
@@ -295,7 +377,8 @@ class ClashRoyaleAnalyzer:
                 clan_info = self.get_clan_info(clan_tag)
                 if clan_info:
                     self.save_clan_members(clan_info)
-                    print(f"Updated clan data with {len(clan_info.get('memberList', []))} members")
+                    self.save_clan_rankings_history(clan_info)
+                    print(f"Updated clan data with {len(clan_info.get('memberList', []))} members and rankings")
         
         # Get battle log
         battles = self.get_battle_log(player_tag)
