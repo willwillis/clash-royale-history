@@ -98,8 +98,22 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clan Analytics - No Data</title>
     <style>
+        @font-face {
+            font-family: 'Clash-Regular';
+            src: url('assets/fonts/Clash_Regular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'Supercell-Magic';
+            src: url('assets/fonts/Supercell-Magic Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
         body { 
-            font-family: Arial, sans-serif; 
+            font-family: 'Clash-Regular', 'Supercell-Magic', Arial, sans-serif; 
             text-align: center; 
             padding: 50px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
