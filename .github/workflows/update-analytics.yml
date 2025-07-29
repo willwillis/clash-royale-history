@@ -49,16 +49,17 @@ jobs:
         cd src
         uv run python analyzer.py
     
-    - name: Generate HTML report
+    - name: Generate HTML reports
       run: |
         cd src
         uv run python html_generator.py
+        uv run python clan_generator.py
         
     - name: Commit database changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add src/clash_royale.db src/index.html
+        git add src/clash_royale.db src/index.html src/clan.html
         if ! git diff --staged --quiet; then
           git commit -m "Update battle data - $(date)"
           # Force push data updates - GitHub Actions is authoritative for data
@@ -67,8 +68,9 @@ jobs:
         
     - name: Move files for GitHub Pages
       run: |
-        # Move generated index.html to root
+        # Move generated HTML files to root
         mv src/index.html ./
+        mv src/clan.html ./
         
         # Cards directory is already in root, no need to copy
         # Copy any additional assets

@@ -754,6 +754,33 @@ class GitHubPagesHTMLGenerator:
         
         return html if html else "<p>No clan deck analytics available yet.</p>"
     
+    def generate_clan_favorite_cards_html(self, deck_analytics: Dict) -> str:
+        """Generate HTML for just clan favorite cards (for main page)"""
+        favorite_cards = deck_analytics.get('favorite_cards', [])
+        if not favorite_cards:
+            return "<p>No favorite card data available yet. <a href='clan.html' style='color: #4299e1;'>View full clan analytics →</a></p>"
+        
+        html = '<div class="favorite-cards-grid">'
+        for card in favorite_cards[:6]:  # Show only top 6 on main page
+            img_path = self.get_card_image_path(card['card_name'])
+            html += f'''
+                <div class="favorite-card-item">
+                    <img src="{img_path}" alt="{card['card_name']}" class="favorite-card-image">
+                    <div class="favorite-card-info">
+                        <span class="card-name">{card['card_name']}</span>
+                        <span class="usage-count">{card['usage_count']} member{"s" if card['usage_count'] > 1 else ""}</span>
+                    </div>
+                </div>
+            '''
+        html += '</div>'
+        
+        # Add link to full clan analytics
+        html += '<div style="text-align: center; margin-top: 15px;">'
+        html += '<a href="clan.html" style="color: #4299e1; text-decoration: none; font-weight: bold;">View Full Clan Analytics →</a>'
+        html += '</div>'
+        
+        return html
+    
     def generate_html_report(self) -> str:
         """Generate complete HTML report for GitHub Pages"""
         stats = self.get_player_stats()
@@ -879,15 +906,14 @@ class GitHubPagesHTMLGenerator:
                 </div>
             """
         
-        # Generate daily histogram, clan rankings, and deck analytics
+        # Generate daily histogram and favorite cards only (main page)
         daily_histogram_html = self.generate_daily_histogram_html(daily_stats)
-        clan_rankings_html = self.generate_clan_rankings_html(clan_rankings, stats['name'])
-        clan_deck_analytics_html = self.generate_clan_deck_analytics_html(deck_analytics)
+        clan_favorite_cards_html = self.generate_clan_favorite_cards_html(deck_analytics)
         
         return self.generate_full_html(stats, win_rate, deck_performance_html, 
                                      battles_table_html, battles_cards_html,
                                      clan_table_html, clan_cards_html, daily_histogram_html, 
-                                     clan_rankings_html, clan_deck_analytics_html)
+                                     clan_favorite_cards_html)
     
     def generate_error_page(self) -> str:
         """Generate error page when no data is available"""
@@ -929,7 +955,7 @@ class GitHubPagesHTMLGenerator:
     def generate_full_html(self, stats, win_rate, deck_performance_html, 
                           battles_table_html, battles_cards_html,
                           clan_table_html, clan_cards_html, daily_histogram_html, 
-                          clan_rankings_html, clan_deck_analytics_html) -> str:
+                          clan_favorite_cards_html) -> str:
         """Generate the complete HTML document"""
         
         # Complete CSS styles for GitHub Pages
@@ -1767,19 +1793,11 @@ class GitHubPagesHTMLGenerator:
         </div>
 
         <div class="section">
-            <h2>🃏 Clan Deck Analytics</h2>
+            <h2>⭐ Clan Favorite Cards</h2>
             <p style="color: #666; margin-bottom: 15px; font-style: italic;">
-                Popular decks, favorite cards, and deck experimentation patterns within your clan.
+                Most popular favorite cards among your clan members.
             </p>
-            {clan_deck_analytics_html}
-        </div>
-
-        <div class="section">
-            <h2>🏆 Clan Rankings & Progression</h2>
-            <p style="color: #666; margin-bottom: 15px; font-style: italic;">
-                Current clan trophy rankings with recent changes. Green = trophy gains, red = trophy losses.
-            </p>
-            {clan_rankings_html}
+            {clan_favorite_cards_html}
         </div>
 
         <div class="section">
