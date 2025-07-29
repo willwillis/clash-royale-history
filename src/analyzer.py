@@ -58,15 +58,40 @@ class ClashRoyaleAnalyzer:
                 king_tower_hit_points INTEGER,
                 princess_towers_hit_points TEXT,
                 deck_cards TEXT,
+                deck_card_levels TEXT,
                 opponent_tag TEXT,
                 opponent_name TEXT,
                 opponent_trophies INTEGER,
                 opponent_deck_cards TEXT,
+                opponent_deck_card_levels TEXT,
+                opponent_clan_tag TEXT,
+                opponent_clan_name TEXT,
+                player_level INTEGER,
+                opponent_level INTEGER,
+                battle_duration_seconds INTEGER,
                 trophy_change INTEGER,
                 FOREIGN KEY (player_tag) REFERENCES players (player_tag),
                 UNIQUE(player_tag, battle_time, battle_type, game_mode)
             )
         """)
+        
+        # Add new columns to existing battles table (migration)
+        new_columns = [
+            ("deck_card_levels", "TEXT"),
+            ("opponent_deck_card_levels", "TEXT"), 
+            ("opponent_clan_tag", "TEXT"),
+            ("opponent_clan_name", "TEXT"),
+            ("player_level", "INTEGER"),
+            ("opponent_level", "INTEGER"),
+            ("battle_duration_seconds", "INTEGER")
+        ]
+        
+        for column_name, column_type in new_columns:
+            try:
+                cursor.execute(f"ALTER TABLE battles ADD COLUMN {column_name} {column_type}")
+            except sqlite3.OperationalError:
+                # Column already exists
+                pass
         
         # Clan members table
         cursor.execute("""
@@ -405,6 +430,32 @@ class ClashRoyaleAnalyzer:
         card_names = sorted([card['name'] for card in cards])
         return ' | '.join(card_names)
     
+    def format_deck_with_levels(self, cards: List[Dict]) -> str:
+        """Format deck cards with levels as JSON string for detailed analysis"""
+        card_data = []
+        for card in cards:
+            card_info = {
+                'name': card['name'],
+                'level': card.get('level', 1),
+                'max_level': card.get('maxLevel', 15),
+                'evolved': card.get('evolved', False),
+                'id': card.get('id')
+            }
+            card_data.append(card_info)
+        
+        # Sort by card name for consistency
+        card_data.sort(key=lambda x: x['name'])
+        return json.dumps(card_data)
+    
+    def calculate_battle_duration(self, battle_time: str, battle_data: Dict) -> Optional[int]:
+        """Calculate battle duration in seconds from battle data"""
+        # The API might provide duration directly, or we might need to calculate it
+        # For now, return None as duration isn't always available in the API
+        duration = battle_data.get('duration')
+        if duration:
+            return int(duration)
+        return None
+    
     def save_battles(self, player_tag: str, battles: List[Dict]):
         """Save battle log to database"""
         conn = sqlite3.connect(self.db_path)
@@ -428,9 +479,22 @@ class ClashRoyaleAnalyzer:
             opponents = battle.get('opponent', [])
             opponent_team = opponents[0] if opponents else None
             
-            # Format deck cards
+            # Format deck cards and card levels
             deck_cards = self.format_deck(player_team.get('cards', []))
+            deck_card_levels = self.format_deck_with_levels(player_team.get('cards', []))
             opponent_deck_cards = self.format_deck(opponent_team.get('cards', [])) if opponent_team else None
+            opponent_deck_card_levels = self.format_deck_with_levels(opponent_team.get('cards', [])) if opponent_team else None
+            
+            # Extract player and opponent levels
+            player_level = player_team.get('expLevel')
+            opponent_level = opponent_team.get('expLevel') if opponent_team else None
+            
+            # Extract opponent clan info
+            opponent_clan_tag = opponent_team.get('clan', {}).get('tag') if opponent_team else None
+            opponent_clan_name = opponent_team.get('clan', {}).get('name') if opponent_team else None
+            
+            # Calculate battle duration (if available)
+            battle_duration = self.calculate_battle_duration(battle['battleTime'], battle)
             
             # Determine result
             player_crowns = player_team.get('crowns', 0)
@@ -448,9 +512,11 @@ class ClashRoyaleAnalyzer:
                     INSERT OR IGNORE INTO battles 
                     (player_tag, battle_time, battle_type, game_mode, is_ladder_tournament,
                      arena_id, arena_name, result, crowns, king_tower_hit_points,
-                     princess_towers_hit_points, deck_cards, opponent_tag, opponent_name,
-                     opponent_trophies, opponent_deck_cards, trophy_change)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     princess_towers_hit_points, deck_cards, deck_card_levels, 
+                     opponent_tag, opponent_name, opponent_trophies, opponent_deck_cards, 
+                     opponent_deck_card_levels, opponent_clan_tag, opponent_clan_name,
+                     player_level, opponent_level, battle_duration_seconds, trophy_change)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     player_tag,
                     battle['battleTime'],
@@ -464,10 +530,17 @@ class ClashRoyaleAnalyzer:
                     player_team.get('kingTowerHitPoints'),
                     json.dumps(player_team.get('princessTowersHitPoints', [])),
                     deck_cards,
+                    deck_card_levels,
                     opponent_team.get('tag') if opponent_team else None,
                     opponent_team.get('name') if opponent_team else None,
                     opponent_team.get('startingTrophies') if opponent_team else None,
                     opponent_deck_cards,
+                    opponent_deck_card_levels,
+                    opponent_clan_tag,
+                    opponent_clan_name,
+                    player_level,
+                    opponent_level,
+                    battle_duration,
                     player_team.get('trophyChange')
                 ))
             except sqlite3.Error as e:

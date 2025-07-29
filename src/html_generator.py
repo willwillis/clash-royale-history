@@ -183,6 +183,83 @@ class GitHubPagesHTMLGenerator:
         conn.close()
         return results
     
+    def get_card_level_analytics(self) -> Dict:
+        """Get card level analytics from enhanced battle data"""
+        if not os.path.exists(self.db_path):
+            return {}
+            
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # Check if new columns exist
+        cursor.execute("PRAGMA table_info(battles)")
+        columns = [col[1] for col in cursor.fetchall()]
+        if 'deck_card_levels' not in columns:
+            conn.close()
+            return {'message': 'Enhanced battle data not available yet. Will be collected from next battles.'}
+        
+        analytics = {}
+        
+        # Average card levels over time
+        cursor.execute("""
+            SELECT deck_card_levels, opponent_deck_card_levels, player_level, opponent_level, result
+            FROM battles 
+            WHERE deck_card_levels IS NOT NULL 
+            ORDER BY battle_time DESC 
+            LIMIT 50
+        """)
+        
+        battles = cursor.fetchall()
+        if battles:
+            total_player_level = 0
+            total_opponent_level = 0
+            level_advantage_wins = 0
+            level_disadvantage_wins = 0
+            total_with_levels = 0
+            
+            for battle in battles:
+                player_level = battle[2]
+                opponent_level = battle[3]
+                result = battle[4]
+                
+                if player_level and opponent_level:
+                    total_player_level += player_level
+                    total_opponent_level += opponent_level
+                    total_with_levels += 1
+                    
+                    if result == 'victory':
+                        if player_level > opponent_level:
+                            level_advantage_wins += 1
+                        elif player_level < opponent_level:
+                            level_disadvantage_wins += 1
+            
+            if total_with_levels > 0:
+                analytics['avg_player_level'] = round(total_player_level / total_with_levels, 1)
+                analytics['avg_opponent_level'] = round(total_opponent_level / total_with_levels, 1)
+                analytics['level_advantage_wins'] = level_advantage_wins
+                analytics['level_disadvantage_wins'] = level_disadvantage_wins
+                analytics['total_with_levels'] = total_with_levels
+        
+        # Opponent clan analysis
+        cursor.execute("""
+            SELECT opponent_clan_name, COUNT(*) as battles, 
+                   SUM(CASE WHEN result = 'victory' THEN 1 ELSE 0 END) as wins
+            FROM battles 
+            WHERE opponent_clan_name IS NOT NULL 
+            GROUP BY opponent_clan_name 
+            ORDER BY battles DESC 
+            LIMIT 10
+        """)
+        
+        clan_battles = cursor.fetchall()
+        analytics['opponent_clans'] = [
+            {'name': row[0], 'battles': row[1], 'wins': row[2], 'win_rate': round((row[2] / row[1]) * 100, 1)}
+            for row in clan_battles
+        ]
+        
+        conn.close()
+        return analytics
+
     def get_recent_battles(self, limit: int = 15) -> List[Dict]:
         """Get recent battle data"""
         if not os.path.exists(self.db_path):
@@ -754,6 +831,66 @@ class GitHubPagesHTMLGenerator:
         
         return html if html else "<p>No clan deck analytics available yet.</p>"
     
+    def generate_card_level_analytics_html(self, analytics: Dict) -> str:
+        """Generate HTML for card level and opponent analytics"""
+        if not analytics:
+            return "<p>Enhanced battle analytics not available yet.</p>"
+        
+        if 'message' in analytics:
+            return f"<p style='color: #666; font-style: italic;'>{analytics['message']}</p>"
+        
+        html = ""
+        
+        # Player vs Opponent Level Analysis
+        if 'avg_player_level' in analytics:
+            html += '<div class="analytics-section">'
+            html += '<h3>⚖️ Level Matchmaking Analysis</h3>'
+            html += f'''
+                <div class="level-comparison">
+                    <div class="level-stat">
+                        <span class="level-label">Your Avg Level:</span>
+                        <span class="level-value">{analytics['avg_player_level']}</span>
+                    </div>
+                    <div class="level-stat">
+                        <span class="level-label">Opponent Avg Level:</span>
+                        <span class="level-value">{analytics['avg_opponent_level']}</span>
+                    </div>
+                </div>
+                <div class="level-win-stats">
+                    <div class="win-stat">
+                        <span class="win-label">Wins with Level Advantage:</span>
+                        <span class="win-count">{analytics['level_advantage_wins']}</span>
+                    </div>
+                    <div class="win-stat">
+                        <span class="win-label">Wins with Level Disadvantage:</span>
+                        <span class="win-count">{analytics['level_disadvantage_wins']}</span>
+                    </div>
+                </div>
+            '''
+            html += '</div>'
+        
+        # Opponent Clan Analysis
+        opponent_clans = analytics.get('opponent_clans', [])
+        if opponent_clans:
+            html += '<div class="analytics-section">'
+            html += '<h3>🏰 Opponent Clan Battles</h3>'
+            html += '<div class="opponent-clans-list">'
+            
+            for clan in opponent_clans[:5]:  # Show top 5
+                html += f'''
+                    <div class="opponent-clan-item">
+                        <div class="clan-name">{clan['name']}</div>
+                        <div class="clan-stats">
+                            <span class="battles-count">{clan['battles']} battles</span>
+                            <span class="win-rate" style="color: {'#38a169' if clan['win_rate'] >= 50 else '#e53e3e'}">{clan['win_rate']}% win rate</span>
+                        </div>
+                    </div>
+                '''
+            
+            html += '</div></div>'
+        
+        return html
+    
     def generate_clan_favorite_cards_html(self, deck_analytics: Dict) -> str:
         """Generate HTML for just clan favorite cards (for main page)"""
         favorite_cards = deck_analytics.get('favorite_cards', [])
@@ -789,6 +926,7 @@ class GitHubPagesHTMLGenerator:
         daily_stats = self.get_daily_battle_stats(30)
         clan_rankings = self.get_clan_rankings_data()
         deck_analytics = self.get_clan_deck_analytics()
+        card_level_analytics = self.get_card_level_analytics()
         
         if not stats:
             return self.generate_error_page()
@@ -860,10 +998,12 @@ class GitHubPagesHTMLGenerator:
         # Generate daily histogram and favorite cards only (main page)
         daily_histogram_html = self.generate_daily_histogram_html(daily_stats)
         clan_favorite_cards_html = self.generate_clan_favorite_cards_html(deck_analytics)
+        card_level_analytics_html = self.generate_card_level_analytics_html(card_level_analytics)
         
         return self.generate_full_html(stats, win_rate, deck_performance_html, 
                                      battles_table_html, battles_cards_html,
-                                     daily_histogram_html, clan_favorite_cards_html)
+                                     daily_histogram_html, clan_favorite_cards_html,
+                                     card_level_analytics_html)
     
     def generate_error_page(self) -> str:
         """Generate error page when no data is available"""
@@ -1580,6 +1720,101 @@ class GitHubPagesHTMLGenerator:
             font-weight: bold;
         }
         
+        /* Card Level Analytics Styles */
+        .level-comparison {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .level-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .level-label {
+            font-weight: 500;
+            color: #2d3748;
+        }
+        
+        .level-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4299e1;
+        }
+        
+        .level-win-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .win-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .win-label {
+            font-size: 0.9em;
+            color: #4a5568;
+        }
+        
+        .win-count {
+            font-weight: bold;
+            color: #38a169;
+        }
+        
+        .opponent-clans-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .opponent-clan-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .clan-name {
+            font-weight: 500;
+            color: #2d3748;
+            font-size: 1.1em;
+        }
+        
+        .clan-stats {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+        
+        .battles-count {
+            font-size: 0.9em;
+            color: #718096;
+        }
+        
+        .win-rate {
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
         @media (max-width: 768px) {
             .deck-cards {
                 grid-template-columns: repeat(2, 1fr);
@@ -1648,6 +1883,10 @@ class GitHubPagesHTMLGenerator:
                 align-items: flex-start;
                 gap: 5px;
             }
+            
+            .level-comparison, .level-win-stats {
+                grid-template-columns: 1fr;
+            }
         }
         
         @media (min-width: 769px) {
@@ -1667,7 +1906,8 @@ class GitHubPagesHTMLGenerator:
     
     def generate_full_html(self, stats, win_rate, deck_performance_html, 
                           battles_table_html, battles_cards_html,
-                          daily_histogram_html, clan_favorite_cards_html) -> str:
+                          daily_histogram_html, clan_favorite_cards_html,
+                          card_level_analytics_html) -> str:
         """Generate the complete HTML document"""
         
         css_styles = self.get_base_css_styles()
@@ -1750,6 +1990,14 @@ class GitHubPagesHTMLGenerator:
                 Most popular favorite cards among your clan members.
             </p>
             {clan_favorite_cards_html}
+        </div>
+
+        <div class="section">
+            <h2>📈 Advanced Battle Analytics</h2>
+            <p style="color: #666; margin-bottom: 15px; font-style: italic;">
+                Enhanced analytics including card levels, opponent analysis, and matchmaking fairness.
+            </p>
+            {card_level_analytics_html}
         </div>
 
         <div class="footer">
