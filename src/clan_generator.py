@@ -271,8 +271,22 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
             box-sizing: border-box;
         }
         
+        @font-face {
+            font-family: 'Clash-Regular';
+            src: url('assets/fonts/Clash_Regular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'Supercell-Magic';
+            src: url('assets/fonts/Supercell-Magic Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Clash-Regular', 'Supercell-Magic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
             line-height: 1.6;
