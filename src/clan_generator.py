@@ -6,6 +6,7 @@ Generates dedicated clan statistics page
 
 import sqlite3
 import os
+import re
 from datetime import datetime
 from typing import List, Dict, Optional
 from html_generator import GitHubPagesHTMLGenerator
@@ -13,6 +14,13 @@ from html_generator import GitHubPagesHTMLGenerator
 class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
     def __init__(self, db_path: str = "clash_royale.db"):
         super().__init__(db_path)
+    
+    def safe_filename(self, name: str) -> str:
+        """Convert member name to safe filename"""
+        # Remove special characters and spaces
+        safe_name = re.sub(r'[^\w\s-]', '', name)
+        safe_name = re.sub(r'\s+', '_', safe_name)
+        return safe_name.lower()
     
     def generate_clan_html_report(self) -> str:
         """Generate complete clan analytics HTML report"""
@@ -46,9 +54,12 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
             
             role_display = member['role'].replace('coLeader', 'Co-Leader')
             
+            member_filename = f"member_{self.safe_filename(member['name'])}.html"
+            member_link = f'<a href="{member_filename}" style="color: #4299e1; text-decoration: none; font-weight: bold;">{member["name"]}</a>'
+            
             clan_table_html += f"""
                 <tr class="{row_class}">
-                    <td>{member['name']}</td>
+                    <td>{member_link}</td>
                     <td><span class="role-{role_class}">{role_display}</span></td>
                     <td>{member['trophies']:,}</td>
                     <td>{member['donations']}↑ {member['donations_received']}↓</td>
@@ -59,7 +70,7 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
             clan_cards_html += f"""
                 <div class="clan-member-card {card_class}">
                     <div class="member-card-header">
-                        <strong class="member-name">{member['name']}</strong>
+                        <strong class="member-name">{member_link}</strong>
                         <span class="role-{role_class} member-role">{role_display}</span>
                     </div>
                     <div class="member-card-content">
@@ -215,6 +226,9 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
 
         <div class="section">
             <h2>🏰 Clan Member Activity</h2>
+            <p style="color: #666; margin-bottom: 15px; font-style: italic;">
+                Click on any member name to view their detailed deck change history.
+            </p>
             <div class="desktop-table">
                 <table>
                     <thead><tr><th>Name</th><th>Role</th><th>Trophies</th><th>Donations</th><th>Last Seen</th></tr></thead>
@@ -362,11 +376,14 @@ def main():
     generator = ClanAnalyticsGenerator()
     html_content = generator.generate_clan_html_report()
     
-    # Save as clan.html for GitHub Pages
-    with open('clan.html', 'w', encoding='utf-8') as f:
+    # Ensure docs directory exists
+    os.makedirs('../docs', exist_ok=True)
+    
+    # Save as clan.html for GitHub Pages in docs directory
+    with open('../docs/clan.html', 'w', encoding='utf-8') as f:
         f.write(html_content)
     
-    print("Clan analytics HTML report generated: clan.html")
+    print("Clan analytics HTML report generated: ../docs/clan.html")
 
 if __name__ == "__main__":
     main()

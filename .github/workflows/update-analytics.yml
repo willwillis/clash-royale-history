@@ -54,34 +54,33 @@ jobs:
         cd src
         uv run python html_generator.py
         uv run python clan_generator.py
+        uv run python member_generator.py
         
     - name: Commit database changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add src/clash_royale.db src/index.html src/clan.html
+        git add src/clash_royale.db docs/index.html docs/clan.html docs/member_*.html
         if ! git diff --staged --quiet; then
           git commit -m "Update battle data - $(date)"
           # Force push data updates - GitHub Actions is authoritative for data
           git push origin HEAD --force-with-lease
         fi
         
-    - name: Move files for GitHub Pages
+    - name: Copy assets to docs
       run: |
-        # Move generated HTML files to root
-        mv src/index.html ./
-        mv src/clan.html ./
+        # Copy cards directory to docs for relative paths
+        cp -r cards docs/
         
-        # Cards directory is already in root, no need to copy
         # Copy any additional assets
         if [ -d "assets" ]; then
-          cp -r assets/* ./
+          cp -r assets/* docs/
         fi
     
     - name: Upload artifacts for Pages
       uses: actions/upload-pages-artifact@v3
       with:
-        path: '.'
+        path: 'docs'
         
   deploy:
     environment:

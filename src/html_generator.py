@@ -786,7 +786,6 @@ class GitHubPagesHTMLGenerator:
         stats = self.get_player_stats()
         decks = self.get_deck_performance(10)
         battles = self.get_recent_battles(15)
-        clan_members = self.get_clan_members()
         daily_stats = self.get_daily_battle_stats(30)
         clan_rankings = self.get_clan_rankings_data()
         deck_analytics = self.get_clan_deck_analytics()
@@ -818,9 +817,7 @@ class GitHubPagesHTMLGenerator:
                 </div>
             """
         
-        # Generate battle and clan HTML using the same responsive approach as before
-        # (Shortened for brevity - would include the same mobile-responsive tables/cards)
-        
+        # Generate battle HTML
         battles_table_html = ""
         battles_cards_html = ""
         
@@ -829,7 +826,7 @@ class GitHubPagesHTMLGenerator:
             result_text = battle['result'].upper()
             trophy_color = "green" if battle['trophy_change'] >= 0 else "red"
             
-            # Table and card HTML generation (same as previous version)
+            # Table and card HTML generation
             battles_table_html += f"""
                 <tr class="battle-{result_class}">
                     <td>{self.format_time_ago(battle['battle_time'])}</td>
@@ -860,60 +857,13 @@ class GitHubPagesHTMLGenerator:
                 </div>
             """
         
-        # Generate clan HTML (same responsive pattern)
-        clan_table_html = ""
-        clan_cards_html = ""
-        
-        for member in clan_members[:20]:
-            is_current_player = member['name'] == stats['name']  # Use actual player name from stats
-            row_class = "current-player" if is_current_player else ""
-            card_class = "current-player-card" if is_current_player else ""
-            
-            role_class = {
-                'leader': 'leader',
-                'coLeader': 'co-leader', 
-                'elder': 'elder',
-                'member': 'member'
-            }.get(member['role'], 'member')
-            
-            role_display = member['role'].replace('coLeader', 'Co-Leader')
-            
-            clan_table_html += f"""
-                <tr class="{row_class}">
-                    <td>{member['name']}</td>
-                    <td><span class="role-{role_class}">{role_display}</span></td>
-                    <td>{member['trophies']:,}</td>
-                    <td>{member['donations']}↑ {member['donations_received']}↓</td>
-                    <td>{self.format_time_ago(member['last_seen'])}</td>
-                </tr>
-            """
-            
-            clan_cards_html += f"""
-                <div class="clan-member-card {card_class}">
-                    <div class="member-card-header">
-                        <strong class="member-name">{member['name']}</strong>
-                        <span class="role-{role_class} member-role">{role_display}</span>
-                    </div>
-                    <div class="member-card-content">
-                        <div class="member-stats">
-                            <span class="trophy-count">🏆 {member['trophies']:,}</span>
-                            <span class="donation-stats">📦 {member['donations']}↑ {member['donations_received']}↓</span>
-                        </div>
-                        <div class="member-activity">
-                            <span class="last-seen">🕒 {self.format_time_ago(member['last_seen'])}</span>
-                        </div>
-                    </div>
-                </div>
-            """
-        
         # Generate daily histogram and favorite cards only (main page)
         daily_histogram_html = self.generate_daily_histogram_html(daily_stats)
         clan_favorite_cards_html = self.generate_clan_favorite_cards_html(deck_analytics)
         
         return self.generate_full_html(stats, win_rate, deck_performance_html, 
                                      battles_table_html, battles_cards_html,
-                                     clan_table_html, clan_cards_html, daily_histogram_html, 
-                                     clan_favorite_cards_html)
+                                     daily_histogram_html, clan_favorite_cards_html)
     
     def generate_error_page(self) -> str:
         """Generate error page when no data is available"""
@@ -952,14 +902,9 @@ class GitHubPagesHTMLGenerator:
 </html>
         """
     
-    def generate_full_html(self, stats, win_rate, deck_performance_html, 
-                          battles_table_html, battles_cards_html,
-                          clan_table_html, clan_cards_html, daily_histogram_html, 
-                          clan_favorite_cards_html) -> str:
-        """Generate the complete HTML document"""
-        
-        # Complete CSS styles for GitHub Pages
-        css_styles = """
+    def get_base_css_styles(self) -> str:
+        """Get base CSS styles used across all pages"""
+        return """
         * {
             margin: 0;
             padding: 0;
@@ -1719,6 +1664,13 @@ class GitHubPagesHTMLGenerator:
             }
         }
         """
+    
+    def generate_full_html(self, stats, win_rate, deck_performance_html, 
+                          battles_table_html, battles_cards_html,
+                          daily_histogram_html, clan_favorite_cards_html) -> str:
+        """Generate the complete HTML document"""
+        
+        css_styles = self.get_base_css_styles()
         
         return f"""
 <!DOCTYPE html>
@@ -1800,17 +1752,6 @@ class GitHubPagesHTMLGenerator:
             {clan_favorite_cards_html}
         </div>
 
-        <div class="section">
-            <h2>🏰 Clan Member Activity</h2>
-            <div class="desktop-table">
-                <table>
-                    <thead><tr><th>Name</th><th>Role</th><th>Trophies</th><th>Donations</th><th>Last Seen</th></tr></thead>
-                    <tbody>{clan_table_html}</tbody>
-                </table>
-            </div>
-            <div class="clan-member-cards">{clan_cards_html}</div>
-        </div>
-
         <div class="footer">
             <p>Report generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
             <p>Data last updated: {self.format_time_ago(stats['last_updated'])}</p>
@@ -1826,11 +1767,14 @@ def main():
     generator = GitHubPagesHTMLGenerator()
     html_content = generator.generate_html_report()
     
-    # Save as index.html for GitHub Pages
-    with open('index.html', 'w', encoding='utf-8') as f:
+    # Ensure docs directory exists
+    os.makedirs('../docs', exist_ok=True)
+    
+    # Save as index.html for GitHub Pages in docs directory
+    with open('../docs/index.html', 'w', encoding='utf-8') as f:
         f.write(html_content)
     
-    print("GitHub Pages HTML report generated: index.html")
+    print("GitHub Pages HTML report generated: ../docs/index.html")
 
 if __name__ == "__main__":
     main()
