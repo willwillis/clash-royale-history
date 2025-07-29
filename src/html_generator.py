@@ -302,6 +302,12 @@ class GitHubPagesHTMLGenerator:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
+        # Check if table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='clan_rankings_history'")
+        if not cursor.fetchone():
+            conn.close()
+            return []
+        
         # Get latest rankings
         cursor.execute("""
             SELECT 
@@ -381,6 +387,101 @@ class GitHubPagesHTMLGenerator:
         
         conn.close()
         return progression
+    
+    def get_clan_deck_analytics(self) -> Dict:
+        """Get clan-wide deck and card analytics"""
+        if not os.path.exists(self.db_path):
+            return {}
+            
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # Check if table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='clan_member_decks'")
+        if not cursor.fetchone():
+            conn.close()
+            return {}
+        
+        analytics = {}
+        
+        # Most popular current decks
+        cursor.execute("""
+            SELECT deck_cards, COUNT(*) as usage_count, 
+                   GROUP_CONCAT(name, ', ') as users
+            FROM (
+                SELECT DISTINCT player_tag, deck_cards, name
+                FROM clan_member_decks cmd1
+                WHERE cmd1.id = (
+                    SELECT MAX(cmd2.id) 
+                    FROM clan_member_decks cmd2 
+                    WHERE cmd2.player_tag = cmd1.player_tag
+                )
+            )
+            GROUP BY deck_cards
+            ORDER BY usage_count DESC, deck_cards
+            LIMIT 10
+        """)
+        
+        popular_decks = []
+        for row in cursor.fetchall():
+            popular_decks.append({
+                'deck_cards': row[0],
+                'usage_count': row[1],
+                'users': row[2]
+            })
+        analytics['popular_decks'] = popular_decks
+        
+        # Most popular favorite cards
+        cursor.execute("""
+            SELECT favorite_card, COUNT(*) as usage_count,
+                   GROUP_CONCAT(name, ', ') as users
+            FROM (
+                SELECT DISTINCT player_tag, favorite_card, name
+                FROM clan_member_decks cmd1
+                WHERE favorite_card != ''
+                  AND cmd1.id = (
+                    SELECT MAX(cmd2.id) 
+                    FROM clan_member_decks cmd2 
+                    WHERE cmd2.player_tag = cmd1.player_tag
+                )
+            )
+            GROUP BY favorite_card
+            ORDER BY usage_count DESC
+            LIMIT 10
+        """)
+        
+        favorite_cards = []
+        for row in cursor.fetchall():
+            favorite_cards.append({
+                'card_name': row[0],
+                'usage_count': row[1],
+                'users': row[2]
+            })
+        analytics['favorite_cards'] = favorite_cards
+        
+        # Deck change frequency by player
+        cursor.execute("""
+            SELECT player_tag, name, COUNT(*) as deck_changes,
+                   MIN(first_seen) as first_deck,
+                   MAX(last_seen) as latest_deck
+            FROM clan_member_decks
+            GROUP BY player_tag, name
+            ORDER BY deck_changes DESC
+        """)
+        
+        deck_experimenters = []
+        for row in cursor.fetchall():
+            deck_experimenters.append({
+                'player_tag': row[0],
+                'name': row[1],
+                'deck_changes': row[2],
+                'first_deck': row[3],
+                'latest_deck': row[4]
+            })
+        analytics['deck_experimenters'] = deck_experimenters
+        
+        conn.close()
+        return analytics
     
     def format_time_ago(self, timestamp: str) -> str:
         """Format timestamp as time ago"""
@@ -590,6 +691,69 @@ class GitHubPagesHTMLGenerator:
         rankings_html += '</div>'
         return rankings_html
     
+    def generate_clan_deck_analytics_html(self, deck_analytics: Dict) -> str:
+        """Generate HTML for clan deck analytics"""
+        if not deck_analytics:
+            return "<p>No clan deck data available yet. Data will appear after the next hourly collection.</p>"
+        
+        html = ""
+        
+        # Popular decks section
+        popular_decks = deck_analytics.get('popular_decks', [])
+        if popular_decks:
+            html += '<div class="analytics-section"><h3>🎯 Most Popular Clan Decks</h3>'
+            for i, deck in enumerate(popular_decks[:5], 1):
+                deck_cards_html = self.generate_deck_cards_html(deck['deck_cards'])
+                html += f'''
+                    <div class="popular-deck-item">
+                        <div class="deck-popularity">
+                            <span class="deck-rank">#{i}</span>
+                            <div class="deck-info">
+                                <span class="usage-count">{deck['usage_count']} member{"s" if deck['usage_count'] > 1 else ""}</span>
+                                <span class="users-list">{deck['users']}</span>
+                            </div>
+                        </div>
+                        {deck_cards_html}
+                    </div>
+                '''
+            html += '</div>'
+        
+        # Favorite cards section
+        favorite_cards = deck_analytics.get('favorite_cards', [])
+        if favorite_cards:
+            html += '<div class="analytics-section"><h3>⭐ Most Popular Favorite Cards</h3>'
+            html += '<div class="favorite-cards-grid">'
+            for card in favorite_cards[:8]:
+                img_path = self.get_card_image_path(card['card_name'])
+                html += f'''
+                    <div class="favorite-card-item">
+                        <img src="{img_path}" alt="{card['card_name']}" class="favorite-card-image">
+                        <div class="favorite-card-info">
+                            <span class="card-name">{card['card_name']}</span>
+                            <span class="usage-count">{card['usage_count']} member{"s" if card['usage_count'] > 1 else ""}</span>
+                        </div>
+                    </div>
+                '''
+            html += '</div></div>'
+        
+        # Deck experimenters section
+        deck_experimenters = deck_analytics.get('deck_experimenters', [])
+        if deck_experimenters:
+            html += '<div class="analytics-section"><h3>🔄 Deck Experimenters</h3>'
+            html += '<div class="experimenters-list">'
+            for member in deck_experimenters[:10]:
+                changes = member['deck_changes']
+                if changes > 1:  # Only show people who have changed decks
+                    html += f'''
+                        <div class="experimenter-item">
+                            <span class="member-name">{member['name']}</span>
+                            <span class="change-count">{changes} deck change{"s" if changes > 1 else ""}</span>
+                        </div>
+                    '''
+            html += '</div></div>'
+        
+        return html if html else "<p>No clan deck analytics available yet.</p>"
+    
     def generate_html_report(self) -> str:
         """Generate complete HTML report for GitHub Pages"""
         stats = self.get_player_stats()
@@ -598,6 +762,7 @@ class GitHubPagesHTMLGenerator:
         clan_members = self.get_clan_members()
         daily_stats = self.get_daily_battle_stats(30)
         clan_rankings = self.get_clan_rankings_data()
+        deck_analytics = self.get_clan_deck_analytics()
         
         if not stats:
             return self.generate_error_page()
@@ -714,13 +879,15 @@ class GitHubPagesHTMLGenerator:
                 </div>
             """
         
-        # Generate daily histogram and clan rankings
+        # Generate daily histogram, clan rankings, and deck analytics
         daily_histogram_html = self.generate_daily_histogram_html(daily_stats)
         clan_rankings_html = self.generate_clan_rankings_html(clan_rankings, stats['name'])
+        clan_deck_analytics_html = self.generate_clan_deck_analytics_html(deck_analytics)
         
         return self.generate_full_html(stats, win_rate, deck_performance_html, 
                                      battles_table_html, battles_cards_html,
-                                     clan_table_html, clan_cards_html, daily_histogram_html, clan_rankings_html)
+                                     clan_table_html, clan_cards_html, daily_histogram_html, 
+                                     clan_rankings_html, clan_deck_analytics_html)
     
     def generate_error_page(self) -> str:
         """Generate error page when no data is available"""
@@ -761,7 +928,8 @@ class GitHubPagesHTMLGenerator:
     
     def generate_full_html(self, stats, win_rate, deck_performance_html, 
                           battles_table_html, battles_cards_html,
-                          clan_table_html, clan_cards_html, daily_histogram_html, clan_rankings_html) -> str:
+                          clan_table_html, clan_cards_html, daily_histogram_html, 
+                          clan_rankings_html, clan_deck_analytics_html) -> str:
         """Generate the complete HTML document"""
         
         # Complete CSS styles for GitHub Pages
@@ -1334,6 +1502,113 @@ class GitHubPagesHTMLGenerator:
             font-size: 0.9em;
         }
         
+        /* Clan Deck Analytics Styles */
+        .analytics-section {
+            margin-bottom: 30px;
+        }
+        
+        .analytics-section h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .popular-deck-item {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .deck-popularity {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .deck-rank {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4299e1;
+            min-width: 40px;
+        }
+        
+        .deck-info {
+            margin-left: 15px;
+        }
+        
+        .usage-count {
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .users-list {
+            color: #718096;
+            font-size: 0.9em;
+            display: block;
+        }
+        
+        .favorite-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+        
+        .favorite-card-item {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .favorite-card-image {
+            width: 50px;
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 8px;
+        }
+        
+        .favorite-card-info .card-name {
+            display: block;
+            font-weight: 500;
+            color: #2d3748;
+            font-size: 0.9em;
+        }
+        
+        .favorite-card-info .usage-count {
+            color: #4299e1;
+            font-size: 0.8em;
+        }
+        
+        .experimenters-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .experimenter-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 10px 15px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .experimenter-item .member-name {
+            font-weight: 500;
+            color: #2d3748;
+        }
+        
+        .experimenter-item .change-count {
+            color: #4299e1;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
         @media (max-width: 768px) {
             .deck-cards {
                 grid-template-columns: repeat(2, 1fr);
@@ -1489,6 +1764,14 @@ class GitHubPagesHTMLGenerator:
                 </table>
             </div>
             <div class="battle-cards">{battles_cards_html}</div>
+        </div>
+
+        <div class="section">
+            <h2>🃏 Clan Deck Analytics</h2>
+            <p style="color: #666; margin-bottom: 15px; font-style: italic;">
+                Popular decks, favorite cards, and deck experimentation patterns within your clan.
+            </p>
+            {clan_deck_analytics_html}
         </div>
 
         <div class="section">

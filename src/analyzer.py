@@ -105,6 +105,29 @@ class ClashRoyaleAnalyzer:
             )
         """)
         
+        # Clan member deck changes table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS clan_member_decks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                player_tag TEXT,
+                name TEXT,
+                deck_cards TEXT,
+                favorite_card TEXT,
+                arena_id INTEGER,
+                arena_name TEXT,
+                league_id INTEGER,
+                league_name TEXT,
+                exp_level INTEGER,
+                trophies INTEGER,
+                best_trophies INTEGER,
+                first_seen TEXT,
+                last_seen TEXT,
+                clan_tag TEXT,
+                clan_name TEXT,
+                FOREIGN KEY (player_tag) REFERENCES players (player_tag)
+            )
+        """)
+        
         # Deck performance view
         cursor.execute("""
             CREATE VIEW IF NOT EXISTS deck_performance AS
@@ -283,6 +306,100 @@ class ClashRoyaleAnalyzer:
         conn.commit()
         conn.close()
     
+    def save_clan_member_deck_if_changed(self, player_data: Dict, clan_tag: str, clan_name: str):
+        """Save clan member deck only if it has changed from the last recorded deck"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        player_tag = player_data['tag']
+        current_time = datetime.now().isoformat()
+        
+        # Format current deck
+        current_deck = self.format_deck(player_data.get('currentDeck', []))
+        favorite_card = player_data.get('currentFavouriteCard', {}).get('name', '')
+        
+        # Get arena and league info
+        arena_info = player_data.get('arena', {})
+        league_info = player_data.get('league', {})
+        
+        # Check if this deck is different from the last recorded deck
+        cursor.execute("""
+            SELECT deck_cards, favorite_card 
+            FROM clan_member_decks 
+            WHERE player_tag = ? 
+            ORDER BY id DESC 
+            LIMIT 1
+        """, (player_tag,))
+        
+        last_record = cursor.fetchone()
+        
+        # Save if deck changed, favorite card changed, or no previous record
+        should_save = (
+            not last_record or 
+            last_record[0] != current_deck or 
+            last_record[1] != favorite_card
+        )
+        
+        if should_save:
+            try:
+                cursor.execute("""
+                    INSERT INTO clan_member_decks 
+                    (player_tag, name, deck_cards, favorite_card, arena_id, arena_name,
+                     league_id, league_name, exp_level, trophies, best_trophies,
+                     first_seen, last_seen, clan_tag, clan_name)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    player_tag,
+                    player_data['name'],
+                    current_deck,
+                    favorite_card,
+                    arena_info.get('id'),
+                    arena_info.get('name'),
+                    league_info.get('id') if league_info else None,
+                    league_info.get('name') if league_info else None,
+                    player_data.get('expLevel', 0),
+                    player_data.get('trophies', 0),
+                    player_data.get('bestTrophies', 0),
+                    current_time,
+                    current_time,
+                    clan_tag,
+                    clan_name
+                ))
+                print(f"  → Saved new deck for {player_data['name']}")
+            except sqlite3.Error as e:
+                print(f"Error saving deck for {player_data['name']}: {e}")
+        else:
+            # Update last_seen for existing deck
+            cursor.execute("""
+                UPDATE clan_member_decks 
+                SET last_seen = ? 
+                WHERE player_tag = ? 
+                  AND id = (SELECT id FROM clan_member_decks WHERE player_tag = ? ORDER BY id DESC LIMIT 1)
+            """, (current_time, player_tag, player_tag))
+        
+        conn.commit()
+        conn.close()
+    
+    def fetch_clan_member_details(self, clan_info: Dict):
+        """Fetch detailed player information for each clan member"""
+        clan_tag = clan_info['tag']
+        clan_name = clan_info['name']
+        members = clan_info.get('memberList', [])
+        
+        print(f"Fetching detailed data for {len(members)} clan members...")
+        
+        for i, member in enumerate(members, 1):
+            member_tag = member['tag']
+            print(f"  {i}/{len(members)}: {member['name']} ({member_tag})")
+            
+            # Get detailed player info
+            player_data = self.get_player_info(member_tag)
+            if player_data:
+                self.save_clan_member_deck_if_changed(player_data, clan_tag, clan_name)
+            
+            # Rate limiting - be nice to the API
+            time.sleep(0.5)
+    
     def format_deck(self, cards: List[Dict]) -> str:
         """Format deck cards as a sorted string for consistent comparison"""
         card_names = sorted([card['name'] for card in cards])
@@ -378,7 +495,8 @@ class ClashRoyaleAnalyzer:
                 if clan_info:
                     self.save_clan_members(clan_info)
                     self.save_clan_rankings_history(clan_info)
-                    print(f"Updated clan data with {len(clan_info.get('memberList', []))} members and rankings")
+                    self.fetch_clan_member_details(clan_info)
+                    print(f"Updated clan data with {len(clan_info.get('memberList', []))} members, rankings, and deck tracking")
         
         # Get battle log
         battles = self.get_battle_log(player_tag)

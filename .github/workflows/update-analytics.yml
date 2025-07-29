@@ -8,9 +8,9 @@ on:
   # Allow manual triggering
   workflow_dispatch:
   
-  # Run on push to main branch (for testing)
+  # Run on push to main or clan-tracking branch (for testing)
   push:
-    branches: [ main ]
+    branches: [ main, clan-tracking ]
 
 permissions:
   contents: write  # Need write to commit database changes
@@ -61,8 +61,8 @@ jobs:
         git add src/clash_royale.db src/index.html
         if ! git diff --staged --quiet; then
           git commit -m "Update battle data - $(date)"
-          git pull origin main --rebase || (git stash && git pull origin main --rebase && git stash pop) || (git rebase --abort && git pull origin main --no-rebase)
-          git push origin main
+          # Force push data updates - GitHub Actions is authoritative for data
+          git push origin HEAD --force-with-lease
         fi
         
     - name: Move files for GitHub Pages
