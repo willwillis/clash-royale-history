@@ -36,6 +36,12 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
         clan_rankings_html = self.generate_clan_rankings_html(clan_rankings, stats['name'])
         clan_deck_analytics_html = self.generate_clan_deck_analytics_html(deck_analytics)
         
+        # Create deck changes lookup
+        deck_changes_lookup = {}
+        if deck_analytics and 'deck_experimenters' in deck_analytics:
+            for experimenter in deck_analytics['deck_experimenters']:
+                deck_changes_lookup[experimenter['name']] = experimenter['deck_changes']
+        
         # Generate clan member tables/cards (reuse existing logic)
         clan_table_html = ""
         clan_cards_html = ""
@@ -57,12 +63,16 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
             member_filename = f"member_{self.safe_filename(member['name'])}.html"
             member_link = f'<a href="{member_filename}" style="color: #4299e1; text-decoration: none; font-weight: bold;">{member["name"]}</a>'
             
+            # Get deck changes for this member
+            deck_changes = deck_changes_lookup.get(member['name'], 0)
+            
             clan_table_html += f"""
                 <tr class="{row_class}">
                     <td>{member_link}</td>
                     <td><span class="role-{role_class}">{role_display}</span></td>
                     <td>{member['trophies']:,}</td>
                     <td>{member['donations']}↑ {member['donations_received']}↓</td>
+                    <td>{deck_changes}</td>
                     <td>{self.format_time_ago(member['last_seen'])}</td>
                 </tr>
             """
@@ -77,6 +87,7 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
                         <div class="member-stats">
                             <span class="trophy-count">🏆 {member['trophies']:,}</span>
                             <span class="donation-stats">📦 {member['donations']}↑ {member['donations_received']}↓</span>
+                            <span class="deck-changes">🔄 {deck_changes} deck changes</span>
                         </div>
                         <div class="member-activity">
                             <span class="last-seen">🕒 {self.format_time_ago(member['last_seen'])}</span>
@@ -194,6 +205,36 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
             color: #666;
             font-size: 1.1em;
         }
+        
+        /* Sortable table styles */
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: background-color 0.2s ease;
+        }
+        
+        .sortable:hover {
+            background-color: #3182ce !important;
+        }
+        
+        .sort-indicator {
+            font-size: 0.8em;
+            margin-left: 5px;
+            opacity: 0.6;
+        }
+        
+        .sortable.sort-asc .sort-indicator:after {
+            content: " ↑";
+            color: #38a169;
+            font-weight: bold;
+        }
+        
+        .sortable.sort-desc .sort-indicator:after {
+            content: " ↓";
+            color: #e53e3e;
+            font-weight: bold;
+        }
         """
         
         return f"""
@@ -222,6 +263,7 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
             </div>
         </div>
 
+        <!-- Clan Deck Analytics section - REMOVED for streamlined interface
         <div class="section">
             <h2>🃏 Clan Deck Analytics</h2>
             <p style="color: #666; margin-bottom: 15px; font-style: italic;">
@@ -229,7 +271,9 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
             </p>
             {clan_deck_analytics_html}
         </div>
+        -->
 
+        <!-- Clan Rankings & Progression section - REMOVED for cleaner interface
         <div class="section">
             <h2>🏆 Clan Rankings & Progression</h2>
             <p style="color: #666; margin-bottom: 15px; font-style: italic;">
@@ -237,6 +281,7 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
             </p>
             {clan_rankings_html}
         </div>
+        -->
 
         <div class="section">
             <h2>🏰 Clan Member Activity</h2>
@@ -244,8 +289,17 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
                 Click on any member name to view their detailed deck change history.
             </p>
             <div class="desktop-table">
-                <table>
-                    <thead><tr><th>Name</th><th>Role</th><th>Trophies</th><th>Donations</th><th>Last Seen</th></tr></thead>
+                <table id="clan-members-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="name">Name <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="role">Role <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="trophies">Trophies <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="donations">Donations <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="deck-changes">Deck Changes <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="last-seen">Last Seen <span class="sort-indicator">↕</span></th>
+                        </tr>
+                    </thead>
                     <tbody>{clan_table_html}</tbody>
                 </table>
             </div>
@@ -258,6 +312,106 @@ class ClanAnalyticsGenerator(GitHubPagesHTMLGenerator):
             <p><a href="index.html" class="back-link">← Back to Main Dashboard</a></p>
         </div>
     </div>
+    
+    <script>
+    // Table sorting functionality
+    document.addEventListener('DOMContentLoaded', function() {{
+        var table = document.getElementById('clan-members-table');
+        var headers = table.querySelectorAll('th.sortable');
+        var currentSort = {{ column: '', direction: '' }};
+        
+        headers.forEach(function(header) {{
+            header.addEventListener('click', function() {{
+                var column = this.getAttribute('data-column');
+                var direction = currentSort.column === column && currentSort.direction === 'asc' ? 'desc' : 'asc';
+                
+                // Remove existing sort classes
+                headers.forEach(function(h) {{ h.classList.remove('sort-asc', 'sort-desc'); }});
+                
+                // Add sort class to current header
+                this.classList.add('sort-' + direction);
+                
+                // Sort the table
+                sortTable(column, direction);
+                
+                currentSort = {{ column: column, direction: direction }};
+            }});
+        }});
+        
+        function sortTable(column, direction) {{
+            var tbody = table.querySelector('tbody');
+            var rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            rows.sort(function(a, b) {{
+                var aVal, bVal;
+                
+                switch(column) {{
+                    case 'name':
+                        aVal = a.cells[0].textContent.trim().toLowerCase();
+                        bVal = b.cells[0].textContent.trim().toLowerCase();
+                        break;
+                    case 'role':
+                        // Custom role order: leader > co-leader > elder > member
+                        var roleOrder = {{'leader': 1, 'co-leader': 2, 'elder': 3, 'member': 4}};
+                        aVal = roleOrder[a.cells[1].textContent.trim().toLowerCase()] || 5;
+                        bVal = roleOrder[b.cells[1].textContent.trim().toLowerCase()] || 5;
+                        break;
+                    case 'trophies':
+                        aVal = parseInt(a.cells[2].textContent.replace(/,/g, '')) || 0;
+                        bVal = parseInt(b.cells[2].textContent.replace(/,/g, '')) || 0;
+                        break;
+                    case 'donations':
+                        // Extract total donations (sent + received)
+                        var aDonations = a.cells[3].textContent.match(/(\\d+)↑\\s*(\\d+)↓/);
+                        var bDonations = b.cells[3].textContent.match(/(\\d+)↑\\s*(\\d+)↓/);
+                        aVal = aDonations ? parseInt(aDonations[1]) + parseInt(aDonations[2]) : 0;
+                        bVal = bDonations ? parseInt(bDonations[1]) + parseInt(bDonations[2]) : 0;
+                        break;
+                    case 'deck-changes':
+                        aVal = parseInt(a.cells[4].textContent) || 0;
+                        bVal = parseInt(b.cells[4].textContent) || 0;
+                        break;
+                    case 'last-seen':
+                        // Parse relative time strings for sorting
+                        aVal = parseTimeAgo(a.cells[5].textContent.trim());
+                        bVal = parseTimeAgo(b.cells[5].textContent.trim());
+                        break;
+                    default:
+                        aVal = a.cells[0].textContent.trim();
+                        bVal = b.cells[0].textContent.trim();
+                }}
+                
+                if (direction === 'asc') {{
+                    return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+                }} else {{
+                    return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+                }}
+            }});
+            
+            // Re-append sorted rows
+            rows.forEach(function(row) {{ tbody.appendChild(row); }});
+        }}
+        
+        function parseTimeAgo(timeStr) {{
+            // Convert time ago strings to minutes for sorting
+            if (timeStr === 'never') return 999999;
+            if (timeStr.includes('hours ago')) {{
+                return parseInt(timeStr) * 60;
+            }} else if (timeStr.includes('days ago')) {{
+                return parseInt(timeStr) * 24 * 60;
+            }} else if (timeStr.includes('minutes ago')) {{
+                return parseInt(timeStr);
+            }} else if (timeStr.includes('hour ago')) {{
+                return 60;
+            }} else if (timeStr.includes('day ago')) {{
+                return 24 * 60;
+            }} else if (timeStr.includes('minute ago')) {{
+                return 1;
+            }}
+            return 0; // "just now" or unrecognized format
+        }}
+    }});
+    </script>
 </body>
 </html>
         """

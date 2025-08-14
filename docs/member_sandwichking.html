@@ -30,10 +30,14 @@
         }
         
         body {
-            font-family: 'Clash-Regular', 'Supercell-Magic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
             line-height: 1.6;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Clash-Regular', 'Supercell-Magic', sans-serif;
         }
         
         .container {
@@ -137,6 +141,25 @@
             grid-template-columns: repeat(4, 1fr);
             gap: 15px;
             margin-top: 15px;
+        }
+        
+        .deck-cards-compact {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+            justify-content: flex-start;
+        }
+        
+        .deck-cards-compact .card-container {
+            flex: 0 0 auto;
+            padding: 5px;
+            min-width: 50px;
+        }
+        
+        .deck-cards-compact .card-image {
+            width: 50px;
+            height: 60px;
         }
         
         .card-container {
@@ -388,17 +411,22 @@
             font-size: 0.9em;
         }
         
-        /* Daily Histogram Styles */
-        .daily-histogram {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            height: 200px;
+        /* Custom Stacked Histogram Styles */
+        .chart-container {
             background: rgba(255, 255, 255, 0.9);
             border-radius: 10px;
             padding: 20px;
             margin: 20px 0;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stacked-histogram {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 200px;
+            padding: 20px 10px 30px 10px;
+            position: relative;
         }
         
         .histogram-bar {
@@ -408,30 +436,8 @@
             position: relative;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
+            align-items: center;
             cursor: pointer;
-            transition: opacity 0.3s ease;
-        }
-        
-        .histogram-bar:hover {
-            opacity: 0.8;
-        }
-        
-        .bar-segment {
-            width: 100%;
-            border-radius: 2px 2px 0 0;
-        }
-        
-        .bar-wins {
-            background: linear-gradient(180deg, #48bb78, #38a169);
-        }
-        
-        .bar-losses {
-            background: linear-gradient(180deg, #f56565, #e53e3e);
-        }
-        
-        .bar-draws {
-            background: linear-gradient(180deg, #ed8936, #dd6b20);
         }
         
         .bar-date {
@@ -444,11 +450,54 @@
             font-weight: 500;
         }
         
+        .bar-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .bar-segment {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            position: relative;
+            font-size: 0.75em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .segment-value {
+            opacity: 0.9;
+        }
+        
+        .bar-wins {
+            background: linear-gradient(180deg, #48bb78, #38a169);
+            border-radius: 2px 2px 0 0;
+        }
+        
+        .bar-losses {
+            background: linear-gradient(180deg, #f56565, #e53e3e);
+        }
+        
+        .bar-draws {
+            background: linear-gradient(180deg, #ed8936, #dd6b20);
+        }
+        
+        .bar-empty {
+            background: linear-gradient(180deg, #cbd5e0, #a0aec0);
+            border: 1px dashed #718096;
+            border-radius: 2px;
+        }
+        
         .histogram-legend {
             display: flex;
             justify-content: center;
             gap: 20px;
-            margin-top: 10px;
+            margin-top: 15px;
             flex-wrap: wrap;
         }
         
@@ -476,15 +525,6 @@
         
         .legend-draws {
             background: linear-gradient(180deg, #ed8936, #dd6b20);
-        }
-        
-        .histogram-bar-empty {
-            opacity: 0.3;
-        }
-        
-        .bar-empty {
-            background: linear-gradient(180deg, #cbd5e0, #a0aec0);
-            border: 1px dashed #718096;
         }
         
         .legend-empty {
@@ -793,9 +833,43 @@
             font-size: 0.9em;
         }
         
+        .clan-analytics-link {
+            color: #4299e1;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            padding: 12px 24px;
+            border: 2px solid #4299e1;
+            border-radius: 8px;
+            display: inline-block;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .clan-analytics-link:hover {
+            background: #4299e1;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+        
         @media (max-width: 768px) {
             .deck-cards {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .deck-cards-compact {
+                gap: 6px;
+            }
+            
+            .deck-cards-compact .card-container {
+                padding: 3px;
+                min-width: 40px;
+            }
+            
+            .deck-cards-compact .card-image {
+                width: 40px;
+                height: 48px;
             }
             
             .player-stats {
@@ -831,9 +905,13 @@
                 padding: 20px;
             }
             
-            .daily-histogram {
-                height: 150px;
+            .chart-container {
                 padding: 15px;
+            }
+            
+            .stacked-histogram {
+                height: 150px;
+                padding: 15px 5px 25px 5px;
             }
             
             .histogram-bar {
@@ -844,6 +922,10 @@
             .bar-date {
                 font-size: 0.7em;
                 bottom: -20px;
+            }
+            
+            .bar-segment {
+                font-size: 0.65em;
             }
             
             .histogram-legend {
@@ -1092,47 +1174,7 @@
                                 <span class="stat">🏟️ Silent Sanctuary</span>
                             </div>
                         </div>
-                        <div class="deck-cards">
-                <div class="card-container">
-                    <img src="cards/normal_cards/Arrows.png" alt="Arrows" class="card-image" title="Arrows" loading="lazy">
-                    <div class="card-name">Arrows</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Bomber.png" alt="Bomber" class="card-image" title="Bomber" loading="lazy">
-                    <div class="card-name">Bomber</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/eWiz.png" alt="Electro Wizard" class="card-image" title="Electro Wizard" loading="lazy">
-                    <div class="card-name">Electro Wizard</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/GoblinCurse.png" alt="Goblin Curse" class="card-image" title="Goblin Curse" loading="lazy">
-                    <div class="card-name">Goblin Curse</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/GobGiant.png" alt="Goblin Giant" class="card-image" title="Goblin Giant" loading="lazy">
-                    <div class="card-name">Goblin Giant</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/GoblinMachine.png" alt="Goblin Machine" class="card-image" title="Goblin Machine" loading="lazy">
-                    <div class="card-name">Goblin Machine</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/PEKKA.png" alt="P.E.K.K.A" class="card-image" title="P.E.K.K.A" loading="lazy">
-                    <div class="card-name">P.E.K.K.A</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Rage.png" alt="Rage" class="card-image" title="Rage" loading="lazy">
-                    <div class="card-name">Rage</div>
-                </div>
-            </div>
+                        <div class="deck-cards-compact"><div class="card-container"><img src="cards/normal_cards/Arrows.png" alt="Arrows" class="card-image" title="Arrows" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Bomber.png" alt="Bomber" class="card-image" title="Bomber" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/eWiz.png" alt="Electro Wizard" class="card-image" title="Electro Wizard" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/GoblinCurse.png" alt="Goblin Curse" class="card-image" title="Goblin Curse" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/GobGiant.png" alt="Goblin Giant" class="card-image" title="Goblin Giant" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/GoblinMachine.png" alt="Goblin Machine" class="card-image" title="Goblin Machine" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/PEKKA.png" alt="P.E.K.K.A" class="card-image" title="P.E.K.K.A" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Rage.png" alt="Rage" class="card-image" title="Rage" loading="lazy"></div></div>
                     </div>
                 </div>
             
@@ -1150,47 +1192,7 @@
                                 <span class="stat">🏟️ Silent Sanctuary</span>
                             </div>
                         </div>
-                        <div class="deck-cards">
-                <div class="card-container">
-                    <img src="cards/normal_cards/Earthquake.png" alt="Earthquake" class="card-image" title="Earthquake" loading="lazy">
-                    <div class="card-name">Earthquake</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Firecracker.png" alt="Firecracker" class="card-image" title="Firecracker" loading="lazy">
-                    <div class="card-name">Firecracker</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Hog.png" alt="Hog Rider" class="card-image" title="Hog Rider" loading="lazy">
-                    <div class="card-name">Hog Rider</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/IceSpirit.png" alt="Ice Spirit" class="card-image" title="Ice Spirit" loading="lazy">
-                    <div class="card-name">Ice Spirit</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Knight.png" alt="Knight" class="card-image" title="Knight" loading="lazy">
-                    <div class="card-name">Knight</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/MegaKnight.png" alt="Mega Knight" class="card-image" title="Mega Knight" loading="lazy">
-                    <div class="card-name">Mega Knight</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Tesla.png" alt="Tesla" class="card-image" title="Tesla" loading="lazy">
-                    <div class="card-name">Tesla</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Log.png" alt="The Log" class="card-image" title="The Log" loading="lazy">
-                    <div class="card-name">The Log</div>
-                </div>
-            </div>
+                        <div class="deck-cards-compact"><div class="card-container"><img src="cards/normal_cards/Earthquake.png" alt="Earthquake" class="card-image" title="Earthquake" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Firecracker.png" alt="Firecracker" class="card-image" title="Firecracker" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Hog.png" alt="Hog Rider" class="card-image" title="Hog Rider" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/IceSpirit.png" alt="Ice Spirit" class="card-image" title="Ice Spirit" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Knight.png" alt="Knight" class="card-image" title="Knight" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/MegaKnight.png" alt="Mega Knight" class="card-image" title="Mega Knight" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Tesla.png" alt="Tesla" class="card-image" title="Tesla" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Log.png" alt="The Log" class="card-image" title="The Log" loading="lazy"></div></div>
                     </div>
                 </div>
             
@@ -1208,47 +1210,7 @@
                                 <span class="stat">🏟️ Silent Sanctuary</span>
                             </div>
                         </div>
-                        <div class="deck-cards">
-                <div class="card-container">
-                    <img src="cards/normal_cards/Cannon.png" alt="Cannon" class="card-image" title="Cannon" loading="lazy">
-                    <div class="card-name">Cannon</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Clone.png" alt="Clone" class="card-image" title="Clone" loading="lazy">
-                    <div class="card-name">Clone</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/eDragon.png" alt="Electro Dragon" class="card-image" title="Electro Dragon" loading="lazy">
-                    <div class="card-name">Electro Dragon</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Firecracker.png" alt="Firecracker" class="card-image" title="Firecracker" loading="lazy">
-                    <div class="card-name">Firecracker</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Knight.png" alt="Knight" class="card-image" title="Knight" loading="lazy">
-                    <div class="card-name">Knight</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Mirror.png" alt="Mirror" class="card-image" title="Mirror" loading="lazy">
-                    <div class="card-name">Mirror</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Rage.png" alt="Rage" class="card-image" title="Rage" loading="lazy">
-                    <div class="card-name">Rage</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Log.png" alt="The Log" class="card-image" title="The Log" loading="lazy">
-                    <div class="card-name">The Log</div>
-                </div>
-            </div>
+                        <div class="deck-cards-compact"><div class="card-container"><img src="cards/normal_cards/Cannon.png" alt="Cannon" class="card-image" title="Cannon" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Clone.png" alt="Clone" class="card-image" title="Clone" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/eDragon.png" alt="Electro Dragon" class="card-image" title="Electro Dragon" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Firecracker.png" alt="Firecracker" class="card-image" title="Firecracker" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Knight.png" alt="Knight" class="card-image" title="Knight" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Mirror.png" alt="Mirror" class="card-image" title="Mirror" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Rage.png" alt="Rage" class="card-image" title="Rage" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Log.png" alt="The Log" class="card-image" title="The Log" loading="lazy"></div></div>
                     </div>
                 </div>
             
@@ -1266,47 +1228,7 @@
                                 <span class="stat">🏟️ Silent Sanctuary</span>
                             </div>
                         </div>
-                        <div class="deck-cards">
-                <div class="card-container">
-                    <img src="cards/normal_cards/Clone.png" alt="Clone" class="card-image" title="Clone" loading="lazy">
-                    <div class="card-name">Clone</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/eDragon.png" alt="Electro Dragon" class="card-image" title="Electro Dragon" loading="lazy">
-                    <div class="card-name">Electro Dragon</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/ElixirGolem.png" alt="Elixir Golem" class="card-image" title="Elixir Golem" loading="lazy">
-                    <div class="card-name">Elixir Golem</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Freeze.png" alt="Freeze" class="card-image" title="Freeze" loading="lazy">
-                    <div class="card-name">Freeze</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Mirror.png" alt="Mirror" class="card-image" title="Mirror" loading="lazy">
-                    <div class="card-name">Mirror</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Rage.png" alt="Rage" class="card-image" title="Rage" loading="lazy">
-                    <div class="card-name">Rage</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/SuspiciousBush.png" alt="Suspicious Bush" class="card-image" title="Suspicious Bush" loading="lazy">
-                    <div class="card-name">Suspicious Bush</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Log.png" alt="The Log" class="card-image" title="The Log" loading="lazy">
-                    <div class="card-name">The Log</div>
-                </div>
-            </div>
+                        <div class="deck-cards-compact"><div class="card-container"><img src="cards/normal_cards/Clone.png" alt="Clone" class="card-image" title="Clone" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/eDragon.png" alt="Electro Dragon" class="card-image" title="Electro Dragon" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/ElixirGolem.png" alt="Elixir Golem" class="card-image" title="Elixir Golem" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Freeze.png" alt="Freeze" class="card-image" title="Freeze" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Mirror.png" alt="Mirror" class="card-image" title="Mirror" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Rage.png" alt="Rage" class="card-image" title="Rage" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/SuspiciousBush.png" alt="Suspicious Bush" class="card-image" title="Suspicious Bush" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Log.png" alt="The Log" class="card-image" title="The Log" loading="lazy"></div></div>
                     </div>
                 </div>
             
@@ -1324,55 +1246,15 @@
                                 <span class="stat">🏟️ Silent Sanctuary</span>
                             </div>
                         </div>
-                        <div class="deck-cards">
-                <div class="card-container">
-                    <img src="cards/normal_cards/Earthquake.png" alt="Earthquake" class="card-image" title="Earthquake" loading="lazy">
-                    <div class="card-name">Earthquake</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Firecracker.png" alt="Firecracker" class="card-image" title="Firecracker" loading="lazy">
-                    <div class="card-name">Firecracker</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Hog.png" alt="Hog Rider" class="card-image" title="Hog Rider" loading="lazy">
-                    <div class="card-name">Hog Rider</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/IceSpirit.png" alt="Ice Spirit" class="card-image" title="Ice Spirit" loading="lazy">
-                    <div class="card-name">Ice Spirit</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Knight.png" alt="Knight" class="card-image" title="Knight" loading="lazy">
-                    <div class="card-name">Knight</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/MegaKnight.png" alt="Mega Knight" class="card-image" title="Mega Knight" loading="lazy">
-                    <div class="card-name">Mega Knight</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Tesla.png" alt="Tesla" class="card-image" title="Tesla" loading="lazy">
-                    <div class="card-name">Tesla</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Log.png" alt="The Log" class="card-image" title="The Log" loading="lazy">
-                    <div class="card-name">The Log</div>
-                </div>
-            </div>
+                        <div class="deck-cards-compact"><div class="card-container"><img src="cards/normal_cards/Earthquake.png" alt="Earthquake" class="card-image" title="Earthquake" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Firecracker.png" alt="Firecracker" class="card-image" title="Firecracker" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Hog.png" alt="Hog Rider" class="card-image" title="Hog Rider" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/IceSpirit.png" alt="Ice Spirit" class="card-image" title="Ice Spirit" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Knight.png" alt="Knight" class="card-image" title="Knight" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/MegaKnight.png" alt="Mega Knight" class="card-image" title="Mega Knight" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Tesla.png" alt="Tesla" class="card-image" title="Tesla" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Log.png" alt="The Log" class="card-image" title="The Log" loading="lazy"></div></div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="footer">
-            <p>Member profile generated on 2025-08-14 20:18:56</p>
-            <p>Last seen: 22 minutes ago</p>
+            <p>Member profile generated on 2025-08-14 18:17:33</p>
+            <p>Last seen: 3 hours ago</p>
             <p><a href="clan.html" class="back-link">← Back to Clan Analytics</a></p>
         </div>
     </div>

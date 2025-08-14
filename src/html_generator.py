@@ -172,7 +172,7 @@ class GitHubPagesHTMLGenerator:
         
         cursor.execute("""
             SELECT * FROM deck_performance 
-            WHERE total_battles >= 1
+            WHERE total_battles >= 3
             ORDER BY win_rate DESC, total_battles DESC
             LIMIT ?
         """, (limit,))
@@ -536,12 +536,26 @@ class GitHubPagesHTMLGenerator:
             })
         analytics['favorite_cards'] = favorite_cards
         
-        # Deck change frequency by player
+        # Deck change frequency by player (counting only actual deck composition changes)
         cursor.execute("""
-            SELECT player_tag, name, COUNT(*) as deck_changes,
-                   MIN(first_seen) as first_deck,
-                   MAX(last_seen) as latest_deck
-            FROM clan_member_decks
+            WITH DeckChanges AS (
+                SELECT 
+                    player_tag,
+                    name,
+                    deck_cards,
+                    MIN(first_seen) as first_seen,
+                    MAX(last_seen) as last_seen,
+                    ROW_NUMBER() OVER (PARTITION BY player_tag ORDER BY MIN(first_seen)) as deck_sequence
+                FROM clan_member_decks
+                GROUP BY player_tag, name, deck_cards
+            )
+            SELECT 
+                player_tag, 
+                name, 
+                COUNT(*) as deck_changes,
+                MIN(first_seen) as first_deck,
+                MAX(last_seen) as latest_deck
+            FROM DeckChanges
             GROUP BY player_tag, name
             ORDER BY deck_changes DESC
         """)
@@ -611,7 +625,7 @@ class GitHubPagesHTMLGenerator:
         except:
             return "unknown"
     
-    def generate_deck_cards_html(self, deck_cards: str) -> str:
+    def generate_deck_cards_html(self, deck_cards: str, show_names: bool = True) -> str:
         """Generate HTML for deck cards with images"""
         if not deck_cards:
             return ""
@@ -621,14 +635,19 @@ class GitHubPagesHTMLGenerator:
         
         for card in cards:
             img_path = self.get_card_image_path(card)
-            cards_html += f"""
+            name_html = f'<div class="card-name">{card}</div>' if show_names else ''
+            if show_names:
+                cards_html += f"""
                 <div class="card-container">
                     <img src="{img_path}" alt="{card}" class="card-image" title="{card}" loading="lazy">
-                    <div class="card-name">{card}</div>
+                    {name_html}
                 </div>
             """
+            else:
+                cards_html += f'<div class="card-container"><img src="{img_path}" alt="{card}" class="card-image" title="{card}" loading="lazy">{name_html}</div>'
         
-        return f'<div class="deck-cards">{cards_html}</div>'
+        css_class = "deck-cards-compact" if not show_names else "deck-cards"
+        return f'<div class="{css_class}">{cards_html}</div>'
     
     def generate_daily_histogram_html(self, daily_stats: List[Dict]) -> str:
         """Generate HTML for daily wins/losses stacked histogram"""
@@ -638,7 +657,11 @@ class GitHubPagesHTMLGenerator:
         # Find max battles for scaling
         max_battles = max((day['total_battles'] for day in daily_stats), default=1)
         
-        histogram_html = '<div class="daily-histogram">'
+        # Create custom stacked histogram
+        histogram_html = '''
+            <div class="chart-container">
+                <div class="stacked-histogram">
+        '''
         
         for day in daily_stats:
             wins = day['wins']
@@ -647,34 +670,65 @@ class GitHubPagesHTMLGenerator:
             total = day['total_battles']
             date = day['date']
             
-            # Handle zero-battle days
+            # Calculate heights as percentages of max battles
             if total == 0:
-                # Show empty day with minimal height and special styling
-                histogram_html += f'''
-                    <div class="histogram-bar histogram-bar-empty" style="height: 5px;" title="{date}: No battles played">
-                        <div class="bar-segment bar-empty" style="height: 100%;"></div>
-                        <div class="bar-date">{date[-2:]}</div>
-                    </div>
-                '''
+                win_height = 0
+                loss_height = 0
+                draw_height = 2  # Minimal height for empty days
             else:
-                # Calculate percentages for stacking
-                win_height = (wins / total) * 100
-                loss_height = (losses / total) * 100
-                draw_height = (draws / total) * 100
-                
-                # Scale the bar height relative to max battles
-                bar_scale = (total / max_battles) * 100
-                
+                # Scale based on max battles, with minimum heights for visibility
+                scale_factor = (total / max_battles) * 180  # 180px max height
+                win_height = max((wins / total) * scale_factor, 1 if wins > 0 else 0)
+                loss_height = max((losses / total) * scale_factor, 1 if losses > 0 else 0)
+                draw_height = max((draws / total) * scale_factor, 1 if draws > 0 else 0)
+            
+            # Create tooltip
+            tooltip = f"{date}: {wins}W/{losses}L/{draws}D" if total > 0 else f"{date}: No battles"
+            
+            histogram_html += f'''
+                <div class="histogram-bar" title="{tooltip}">
+                    <div class="bar-date">{date[-2:]}</div>
+                    <div class="bar-stack">
+            '''
+            
+            # Add segments from bottom to top: losses, draws, wins
+            if loss_height > 0:
                 histogram_html += f'''
-                    <div class="histogram-bar" style="height: {bar_scale}%;" title="{date}: {wins}W/{losses}L/{draws}D ({total} total)">
-                        <div class="bar-segment bar-wins" style="height: {win_height}%;"></div>
-                        <div class="bar-segment bar-losses" style="height: {loss_height}%;"></div>
-                        <div class="bar-segment bar-draws" style="height: {draw_height}%;"></div>
-                        <div class="bar-date">{date[-2:]}</div>
+                    <div class="bar-segment bar-losses" style="height: {loss_height}px;">
+                        {f'<span class="segment-value">{losses}</span>' if losses > 0 else ''}
                     </div>
                 '''
+            
+            if draw_height > 0:
+                histogram_html += f'''
+                    <div class="bar-segment bar-draws" style="height: {draw_height}px;">
+                        {f'<span class="segment-value">{draws}</span>' if draws > 0 else ''}
+                    </div>
+                '''
+            
+            if win_height > 0:
+                histogram_html += f'''
+                    <div class="bar-segment bar-wins" style="height: {win_height}px;">
+                        {f'<span class="segment-value">{wins}</span>' if wins > 0 else ''}
+                    </div>
+                '''
+            
+            # Handle empty days
+            if total == 0:
+                histogram_html += f'''
+                    <div class="bar-segment bar-empty" style="height: {draw_height}px;">
+                    </div>
+                '''
+            
+            histogram_html += '''
+                    </div>
+                </div>
+            '''
         
-        histogram_html += '</div>'
+        histogram_html += '''
+                </div>
+            </div>
+        '''
         
         # Add legend
         legend_html = '''
@@ -693,7 +747,7 @@ class GitHubPagesHTMLGenerator:
                 </div>
                 <div class="legend-item">
                     <span class="legend-color legend-empty"></span>
-                    <span>No battles</span>
+                    <span>No Battles</span>
                 </div>
             </div>
         '''
@@ -775,25 +829,25 @@ class GitHubPagesHTMLGenerator:
         
         html = ""
         
-        # Popular decks section
-        popular_decks = deck_analytics.get('popular_decks', [])
-        if popular_decks:
-            html += '<div class="analytics-section"><h3>🎯 Most Popular Clan Decks</h3>'
-            for i, deck in enumerate(popular_decks[:5], 1):
-                deck_cards_html = self.generate_deck_cards_html(deck['deck_cards'])
-                html += f'''
-                    <div class="popular-deck-item">
-                        <div class="deck-popularity">
-                            <span class="deck-rank">#{i}</span>
-                            <div class="deck-info">
-                                <span class="usage-count">{deck['usage_count']} member{"s" if deck['usage_count'] > 1 else ""}</span>
-                                <span class="users-list">{deck['users']}</span>
-                            </div>
-                        </div>
-                        {deck_cards_html}
-                    </div>
-                '''
-            html += '</div>'
+        # Popular decks section - REMOVED: Most Popular Clan Decks section
+        # popular_decks = deck_analytics.get('popular_decks', [])
+        # if popular_decks:
+        #     html += '<div class="analytics-section"><h3>🎯 Most Popular Clan Decks</h3>'
+        #     for i, deck in enumerate(popular_decks[:5], 1):
+        #         deck_cards_html = self.generate_deck_cards_html(deck['deck_cards'], show_names=False)
+        #         html += f'''
+        #             <div class="popular-deck-item">
+        #                 <div class="deck-popularity">
+        #                     <span class="deck-rank">#{i}</span>
+        #                     <div class="deck-info">
+        #                         <span class="usage-count">{deck['usage_count']} member{"s" if deck['usage_count'] > 1 else ""}</span>
+        #                         <span class="users-list">{deck['users']}</span>
+        #                     </div>
+        #                 </div>
+        #                 {deck_cards_html}
+        #             </div>
+        #         '''
+        #     html += '</div>'
         
         # Favorite cards section
         favorite_cards = deck_analytics.get('favorite_cards', [])
@@ -813,21 +867,21 @@ class GitHubPagesHTMLGenerator:
                 '''
             html += '</div></div>'
         
-        # Deck experimenters section
-        deck_experimenters = deck_analytics.get('deck_experimenters', [])
-        if deck_experimenters:
-            html += '<div class="analytics-section"><h3>🔄 Deck Experimenters</h3>'
-            html += '<div class="experimenters-list">'
-            for member in deck_experimenters[:10]:
-                changes = member['deck_changes']
-                if changes > 1:  # Only show people who have changed decks
-                    html += f'''
-                        <div class="experimenter-item">
-                            <span class="member-name">{member['name']}</span>
-                            <span class="change-count">{changes} deck change{"s" if changes > 1 else ""}</span>
-                        </div>
-                    '''
-            html += '</div></div>'
+        # Deck experimenters section - REMOVED: Moved to clan member activity table
+        # deck_experimenters = deck_analytics.get('deck_experimenters', [])
+        # if deck_experimenters:
+        #     html += '<div class="analytics-section"><h3>🔄 Deck Experimenters</h3>'
+        #     html += '<div class="experimenters-list">'
+        #     for member in deck_experimenters[:10]:
+        #         changes = member['deck_changes']
+        #         if changes > 1:  # Only show people who have changed decks
+        #             html += f'''
+        #                 <div class="experimenter-item">
+        #                     <span class="member-name">{member['name']}</span>
+        #                     <span class="change-count">{changes} deck change{"s" if changes > 1 else ""}</span>
+        #                 </div>
+        #             '''
+        #     html += '</div></div>'
         
         return html if html else "<p>No clan deck analytics available yet.</p>"
     
@@ -922,11 +976,11 @@ class GitHubPagesHTMLGenerator:
         """Generate complete HTML report for GitHub Pages"""
         stats = self.get_player_stats()
         decks = self.get_deck_performance(10)
-        battles = self.get_recent_battles(15)
+        # battles = self.get_recent_battles(15)  # Commented out - Recent Battles section
         daily_stats = self.get_daily_battle_stats(30)
         clan_rankings = self.get_clan_rankings_data()
-        deck_analytics = self.get_clan_deck_analytics()
-        card_level_analytics = self.get_card_level_analytics()
+        # deck_analytics = self.get_clan_deck_analytics()  # Commented out - Clan Favorite Cards section
+        # card_level_analytics = self.get_card_level_analytics()  # Commented out - Advanced Battle Analytics section
         
         if not stats:
             return self.generate_error_page()
@@ -937,7 +991,7 @@ class GitHubPagesHTMLGenerator:
         deck_performance_html = ""
         for i, deck in enumerate(decks, 1):
             trophy_color = "green" if deck['total_trophy_change'] >= 0 else "red"
-            deck_cards_html = self.generate_deck_cards_html(deck['deck_cards'])
+            deck_cards_html = self.generate_deck_cards_html(deck['deck_cards'], show_names=False)
             
             deck_performance_html += f"""
                 <div class="deck-item">
@@ -955,55 +1009,53 @@ class GitHubPagesHTMLGenerator:
                 </div>
             """
         
-        # Generate battle HTML
-        battles_table_html = ""
-        battles_cards_html = ""
+        # Generate battle HTML - COMMENTED OUT
+        # battles_table_html = ""
+        # battles_cards_html = ""
+        # 
+        # for battle in battles[:10]:
+        #     result_class = battle['result']
+        #     result_text = battle['result'].upper()
+        #     trophy_color = "green" if battle['trophy_change'] >= 0 else "red"
+        #     
+        #     # Table and card HTML generation
+        #     battles_table_html += f"""
+        #         <tr class="battle-{result_class}">
+        #             <td>{self.format_time_ago(battle['battle_time'])}</td>
+        #             <td><span class="result-{result_class}">{result_text}</span></td>
+        #             <td>{battle['opponent_name']}</td>
+        #             <td>{battle['crowns']}</td>
+        #             <td style="color: {trophy_color}">{battle['trophy_change']:+d}</td>
+        #             <td>{battle['arena_name']}</td>
+        #         </tr>
+        #     """
+        #     
+        #     battles_cards_html += f"""
+        #         <div class="battle-card battle-{result_class}">
+        #             <div class="battle-card-header">
+        #                 <span class="result-{result_class} battle-result">{result_text}</span>
+        #                 <span class="battle-time">{self.format_time_ago(battle['battle_time'])}</span>
+        #             </div>
+        #             <div class="battle-card-content">
+        #                 <div class="battle-info">
+        #                     <strong>vs {battle['opponent_name']}</strong>
+        #                     <span>{battle['arena_name']}</span>
+        #                 </div>
+        #                 <div class="battle-stats">
+        #                     <span class="crown-count">👑 {battle['crowns']}</span>
+        #                     <span class="trophy-change" style="color: {trophy_color}">🏆 {battle['trophy_change']:+d}</span>
+        #                 </div>
+        #             </div>
+        #         </div>
+        #     """
         
-        for battle in battles[:10]:
-            result_class = battle['result']
-            result_text = battle['result'].upper()
-            trophy_color = "green" if battle['trophy_change'] >= 0 else "red"
-            
-            # Table and card HTML generation
-            battles_table_html += f"""
-                <tr class="battle-{result_class}">
-                    <td>{self.format_time_ago(battle['battle_time'])}</td>
-                    <td><span class="result-{result_class}">{result_text}</span></td>
-                    <td>{battle['opponent_name']}</td>
-                    <td>{battle['crowns']}</td>
-                    <td style="color: {trophy_color}">{battle['trophy_change']:+d}</td>
-                    <td>{battle['arena_name']}</td>
-                </tr>
-            """
-            
-            battles_cards_html += f"""
-                <div class="battle-card battle-{result_class}">
-                    <div class="battle-card-header">
-                        <span class="result-{result_class} battle-result">{result_text}</span>
-                        <span class="battle-time">{self.format_time_ago(battle['battle_time'])}</span>
-                    </div>
-                    <div class="battle-card-content">
-                        <div class="battle-info">
-                            <strong>vs {battle['opponent_name']}</strong>
-                            <span>{battle['arena_name']}</span>
-                        </div>
-                        <div class="battle-stats">
-                            <span class="crown-count">👑 {battle['crowns']}</span>
-                            <span class="trophy-change" style="color: {trophy_color}">🏆 {battle['trophy_change']:+d}</span>
-                        </div>
-                    </div>
-                </div>
-            """
-        
-        # Generate daily histogram and favorite cards only (main page)
+        # Generate daily histogram only (main page)
         daily_histogram_html = self.generate_daily_histogram_html(daily_stats)
-        clan_favorite_cards_html = self.generate_clan_favorite_cards_html(deck_analytics)
-        card_level_analytics_html = self.generate_card_level_analytics_html(card_level_analytics)
+        # clan_favorite_cards_html = self.generate_clan_favorite_cards_html(deck_analytics)  # Commented out
+        # card_level_analytics_html = self.generate_card_level_analytics_html(card_level_analytics)  # Commented out
         
         return self.generate_full_html(stats, win_rate, deck_performance_html, 
-                                     battles_table_html, battles_cards_html,
-                                     daily_histogram_html, clan_favorite_cards_html,
-                                     card_level_analytics_html)
+                                     daily_histogram_html)
     
     def generate_error_page(self) -> str:
         """Generate error page when no data is available"""
@@ -1066,10 +1118,14 @@ class GitHubPagesHTMLGenerator:
         }
         
         body {
-            font-family: 'Clash-Regular', 'Supercell-Magic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
             line-height: 1.6;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Clash-Regular', 'Supercell-Magic', sans-serif;
         }
         
         .container {
@@ -1173,6 +1229,25 @@ class GitHubPagesHTMLGenerator:
             grid-template-columns: repeat(4, 1fr);
             gap: 15px;
             margin-top: 15px;
+        }
+        
+        .deck-cards-compact {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+            justify-content: flex-start;
+        }
+        
+        .deck-cards-compact .card-container {
+            flex: 0 0 auto;
+            padding: 5px;
+            min-width: 50px;
+        }
+        
+        .deck-cards-compact .card-image {
+            width: 50px;
+            height: 60px;
         }
         
         .card-container {
@@ -1424,17 +1499,22 @@ class GitHubPagesHTMLGenerator:
             font-size: 0.9em;
         }
         
-        /* Daily Histogram Styles */
-        .daily-histogram {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            height: 200px;
+        /* Custom Stacked Histogram Styles */
+        .chart-container {
             background: rgba(255, 255, 255, 0.9);
             border-radius: 10px;
             padding: 20px;
             margin: 20px 0;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stacked-histogram {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 200px;
+            padding: 20px 10px 30px 10px;
+            position: relative;
         }
         
         .histogram-bar {
@@ -1444,30 +1524,8 @@ class GitHubPagesHTMLGenerator:
             position: relative;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
+            align-items: center;
             cursor: pointer;
-            transition: opacity 0.3s ease;
-        }
-        
-        .histogram-bar:hover {
-            opacity: 0.8;
-        }
-        
-        .bar-segment {
-            width: 100%;
-            border-radius: 2px 2px 0 0;
-        }
-        
-        .bar-wins {
-            background: linear-gradient(180deg, #48bb78, #38a169);
-        }
-        
-        .bar-losses {
-            background: linear-gradient(180deg, #f56565, #e53e3e);
-        }
-        
-        .bar-draws {
-            background: linear-gradient(180deg, #ed8936, #dd6b20);
         }
         
         .bar-date {
@@ -1480,11 +1538,54 @@ class GitHubPagesHTMLGenerator:
             font-weight: 500;
         }
         
+        .bar-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .bar-segment {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            position: relative;
+            font-size: 0.75em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .segment-value {
+            opacity: 0.9;
+        }
+        
+        .bar-wins {
+            background: linear-gradient(180deg, #48bb78, #38a169);
+            border-radius: 2px 2px 0 0;
+        }
+        
+        .bar-losses {
+            background: linear-gradient(180deg, #f56565, #e53e3e);
+        }
+        
+        .bar-draws {
+            background: linear-gradient(180deg, #ed8936, #dd6b20);
+        }
+        
+        .bar-empty {
+            background: linear-gradient(180deg, #cbd5e0, #a0aec0);
+            border: 1px dashed #718096;
+            border-radius: 2px;
+        }
+        
         .histogram-legend {
             display: flex;
             justify-content: center;
             gap: 20px;
-            margin-top: 10px;
+            margin-top: 15px;
             flex-wrap: wrap;
         }
         
@@ -1512,15 +1613,6 @@ class GitHubPagesHTMLGenerator:
         
         .legend-draws {
             background: linear-gradient(180deg, #ed8936, #dd6b20);
-        }
-        
-        .histogram-bar-empty {
-            opacity: 0.3;
-        }
-        
-        .bar-empty {
-            background: linear-gradient(180deg, #cbd5e0, #a0aec0);
-            border: 1px dashed #718096;
         }
         
         .legend-empty {
@@ -1829,9 +1921,43 @@ class GitHubPagesHTMLGenerator:
             font-size: 0.9em;
         }
         
+        .clan-analytics-link {
+            color: #4299e1;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            padding: 12px 24px;
+            border: 2px solid #4299e1;
+            border-radius: 8px;
+            display: inline-block;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .clan-analytics-link:hover {
+            background: #4299e1;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+        
         @media (max-width: 768px) {
             .deck-cards {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .deck-cards-compact {
+                gap: 6px;
+            }
+            
+            .deck-cards-compact .card-container {
+                padding: 3px;
+                min-width: 40px;
+            }
+            
+            .deck-cards-compact .card-image {
+                width: 40px;
+                height: 48px;
             }
             
             .player-stats {
@@ -1867,9 +1993,13 @@ class GitHubPagesHTMLGenerator:
                 padding: 20px;
             }
             
-            .daily-histogram {
-                height: 150px;
+            .chart-container {
                 padding: 15px;
+            }
+            
+            .stacked-histogram {
+                height: 150px;
+                padding: 15px 5px 25px 5px;
             }
             
             .histogram-bar {
@@ -1880,6 +2010,10 @@ class GitHubPagesHTMLGenerator:
             .bar-date {
                 font-size: 0.7em;
                 bottom: -20px;
+            }
+            
+            .bar-segment {
+                font-size: 0.65em;
             }
             
             .histogram-legend {
@@ -1919,9 +2053,7 @@ class GitHubPagesHTMLGenerator:
         """
     
     def generate_full_html(self, stats, win_rate, deck_performance_html, 
-                          battles_table_html, battles_cards_html,
-                          daily_histogram_html, clan_favorite_cards_html,
-                          card_level_analytics_html) -> str:
+                          daily_histogram_html) -> str:
         """Generate the complete HTML document"""
         
         css_styles = self.get_base_css_styles()
@@ -1936,6 +2068,7 @@ class GitHubPagesHTMLGenerator:
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/charts.css/dist/charts.min.css">
     <style>{css_styles}</style>
 </head>
 <body>
@@ -1987,32 +2120,50 @@ class GitHubPagesHTMLGenerator:
             {deck_performance_html}
         </div>
 
+        <!-- COMMENTED OUT - Recent Battles Section
         <div class="section">
             <h2>⚔️ Recent Battles</h2>
             <div class="desktop-table">
                 <table>
                     <thead><tr><th>Time</th><th>Result</th><th>Opponent</th><th>Crowns</th><th>Trophy Δ</th><th>Arena</th></tr></thead>
-                    <tbody>{battles_table_html}</tbody>
+                    <tbody>BATTLES_TABLE_HTML</tbody>
                 </table>
             </div>
-            <div class="battle-cards">{battles_cards_html}</div>
+            <div class="battle-cards">BATTLES_CARDS_HTML</div>
         </div>
+        -->
 
+        <!-- COMMENTED OUT - Clan Favorite Cards Section
         <div class="section">
             <h2>⭐ Clan Favorite Cards</h2>
             <p style="color: #666; margin-bottom: 15px; font-style: italic;">
                 Most popular favorite cards among your clan members.
             </p>
-            {clan_favorite_cards_html}
+            CLAN_FAVORITE_CARDS_HTML
+        </div>
+        -->
+
+        <div class="section">
+            <h2>🏰 Clan Analytics</h2>
+            <p style="color: #666; margin-bottom: 15px; font-style: italic;">
+                View detailed clan member statistics, deck analytics, and performance trends.
+            </p>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="clan.html" class="clan-analytics-link">
+                    View Full Clan Analytics →
+                </a>
+            </div>
         </div>
 
+        <!-- COMMENTED OUT - Advanced Battle Analytics Section
         <div class="section">
             <h2>📈 Advanced Battle Analytics</h2>
             <p style="color: #666; margin-bottom: 15px; font-style: italic;">
                 Enhanced analytics including card levels, opponent analysis, and matchmaking fairness.
             </p>
-            {card_level_analytics_html}
+            CARD_LEVEL_ANALYTICS_HTML
         </div>
+        -->
 
         <div class="footer">
             <p>Report generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>

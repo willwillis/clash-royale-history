@@ -358,11 +358,10 @@ class ClashRoyaleAnalyzer:
         
         last_record = cursor.fetchone()
         
-        # Save if deck changed, favorite card changed, or no previous record
+        # Save only if deck changed or no previous record (ignore favorite card changes)
         should_save = (
             not last_record or 
-            last_record[0] != current_deck or 
-            last_record[1] != favorite_card
+            last_record[0] != current_deck
         )
         
         if should_save:
@@ -394,13 +393,13 @@ class ClashRoyaleAnalyzer:
             except sqlite3.Error as e:
                 print(f"Error saving deck for {player_data['name']}: {e}")
         else:
-            # Update last_seen for existing deck
+            # Update last_seen and favorite_card for existing deck
             cursor.execute("""
                 UPDATE clan_member_decks 
-                SET last_seen = ? 
+                SET last_seen = ?, favorite_card = ? 
                 WHERE player_tag = ? 
                   AND id = (SELECT id FROM clan_member_decks WHERE player_tag = ? ORDER BY id DESC LIMIT 1)
-            """, (current_time, player_tag, player_tag))
+            """, (current_time, favorite_card, player_tag, player_tag))
         
         conn.commit()
         conn.close()

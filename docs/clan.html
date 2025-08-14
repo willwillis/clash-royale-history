@@ -186,6 +186,36 @@
             color: #666;
             font-size: 1.1em;
         }
+        
+        /* Sortable table styles */
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: background-color 0.2s ease;
+        }
+        
+        .sortable:hover {
+            background-color: #3182ce !important;
+        }
+        
+        .sort-indicator {
+            font-size: 0.8em;
+            margin-left: 5px;
+            opacity: 0.6;
+        }
+        
+        .sortable.sort-asc .sort-indicator:after {
+            content: " ↑";
+            color: #38a169;
+            font-weight: bold;
+        }
+        
+        .sortable.sort-desc .sort-indicator:after {
+            content: " ↓";
+            color: #e53e3e;
+            font-weight: bold;
+        }
         </style>
 </head>
 <body>
@@ -202,267 +232,13 @@
             </div>
         </div>
 
+        <!-- Clan Deck Analytics section - REMOVED for streamlined interface
         <div class="section">
             <h2>🃏 Clan Deck Analytics</h2>
             <p style="color: #666; margin-bottom: 15px; font-style: italic;">
                 Popular decks, favorite cards, and deck experimentation patterns within your clan.
             </p>
-            <div class="analytics-section"><h3>🎯 Most Popular Clan Decks</h3>
-                    <div class="popular-deck-item">
-                        <div class="deck-popularity">
-                            <span class="deck-rank">#1</span>
-                            <div class="deck-info">
-                                <span class="usage-count">2 members</span>
-                                <span class="users-list">ken, ken</span>
-                            </div>
-                        </div>
-                        <div class="deck-cards">
-                <div class="card-container">
-                    <img src="cards/normal_cards/Arrows.png" alt="Arrows" class="card-image" title="Arrows" loading="lazy">
-                    <div class="card-name">Arrows</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/BarbBarrel.png" alt="Barbarian Barrel" class="card-image" title="Barbarian Barrel" loading="lazy">
-                    <div class="card-name">Barbarian Barrel</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/DartGob.png" alt="Dart Goblin" class="card-image" title="Dart Goblin" loading="lazy">
-                    <div class="card-name">Dart Goblin</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/MegaKnight.png" alt="Mega Knight" class="card-image" title="Mega Knight" loading="lazy">
-                    <div class="card-name">Mega Knight</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Minions.png" alt="Minions" class="card-image" title="Minions" loading="lazy">
-                    <div class="card-name">Minions</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Skarmy.png" alt="Skeleton Army" class="card-image" title="Skeleton Army" loading="lazy">
-                    <div class="card-name">Skeleton Army</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Log.png" alt="The Log" class="card-image" title="The Log" loading="lazy">
-                    <div class="card-name">The Log</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Wiz.png" alt="Wizard" class="card-image" title="Wizard" loading="lazy">
-                    <div class="card-name">Wizard</div>
-                </div>
-            </div>
-                    </div>
-                
-                    <div class="popular-deck-item">
-                        <div class="deck-popularity">
-                            <span class="deck-rank">#2</span>
-                            <div class="deck-info">
-                                <span class="usage-count">2 members</span>
-                                <span class="users-list">Colitisman, Kenzie Lou</span>
-                            </div>
-                        </div>
-                        <div class="deck-cards">
-                <div class="card-container">
-                    <img src="cards/normal_cards/DartGob.png" alt="Dart Goblin" class="card-image" title="Dart Goblin" loading="lazy">
-                    <div class="card-name">Dart Goblin</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Firecracker.png" alt="Firecracker" class="card-image" title="Firecracker" loading="lazy">
-                    <div class="card-name">Firecracker</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Barrel.png" alt="Goblin Barrel" class="card-image" title="Goblin Barrel" loading="lazy">
-                    <div class="card-name">Goblin Barrel</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Inferno.png" alt="Inferno Tower" class="card-image" title="Inferno Tower" loading="lazy">
-                    <div class="card-name">Inferno Tower</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Knight.png" alt="Knight" class="card-image" title="Knight" loading="lazy">
-                    <div class="card-name">Knight</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/MegaKnight.png" alt="Mega Knight" class="card-image" title="Mega Knight" loading="lazy">
-                    <div class="card-name">Mega Knight</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Skarmy.png" alt="Skeleton Army" class="card-image" title="Skeleton Army" loading="lazy">
-                    <div class="card-name">Skeleton Army</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/SkellyBarrel.png" alt="Skeleton Barrel" class="card-image" title="Skeleton Barrel" loading="lazy">
-                    <div class="card-name">Skeleton Barrel</div>
-                </div>
-            </div>
-                    </div>
-                
-                    <div class="popular-deck-item">
-                        <div class="deck-popularity">
-                            <span class="deck-rank">#3</span>
-                            <div class="deck-info">
-                                <span class="usage-count">1 member</span>
-                                <span class="users-list">Whitey</span>
-                            </div>
-                        </div>
-                        <div class="deck-cards">
-                <div class="card-container">
-                    <img src="cards/normal_cards/Archers.png" alt="Archers" class="card-image" title="Archers" loading="lazy">
-                    <div class="card-name">Archers</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Bandit.png" alt="Bandit" class="card-image" title="Bandit" loading="lazy">
-                    <div class="card-name">Bandit</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Fireball.png" alt="Fireball" class="card-image" title="Fireball" loading="lazy">
-                    <div class="card-name">Fireball</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/MegaKnight.png" alt="Mega Knight" class="card-image" title="Mega Knight" loading="lazy">
-                    <div class="card-name">Mega Knight</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Horde.png" alt="Minion Horde" class="card-image" title="Minion Horde" loading="lazy">
-                    <div class="card-name">Minion Horde</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Log.png" alt="The Log" class="card-image" title="The Log" loading="lazy">
-                    <div class="card-name">The Log</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Valk.png" alt="Valkyrie" class="card-image" title="Valkyrie" loading="lazy">
-                    <div class="card-name">Valkyrie</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Witch.png" alt="Witch" class="card-image" title="Witch" loading="lazy">
-                    <div class="card-name">Witch</div>
-                </div>
-            </div>
-                    </div>
-                
-                    <div class="popular-deck-item">
-                        <div class="deck-popularity">
-                            <span class="deck-rank">#4</span>
-                            <div class="deck-info">
-                                <span class="usage-count">1 member</span>
-                                <span class="users-list">Spartac</span>
-                            </div>
-                        </div>
-                        <div class="deck-cards">
-                <div class="card-container">
-                    <img src="cards/normal_cards/Archers.png" alt="Archers" class="card-image" title="Archers" loading="lazy">
-                    <div class="card-name">Archers</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/ElixirGolem.png" alt="Elixir Golem" class="card-image" title="Elixir Golem" loading="lazy">
-                    <div class="card-name">Elixir Golem</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Fireball.png" alt="Fireball" class="card-image" title="Fireball" loading="lazy">
-                    <div class="card-name">Fireball</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/GobGang.png" alt="Goblin Gang" class="card-image" title="Goblin Gang" loading="lazy">
-                    <div class="card-name">Goblin Gang</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/PEKKA.png" alt="P.E.K.K.A" class="card-image" title="P.E.K.K.A" loading="lazy">
-                    <div class="card-name">P.E.K.K.A</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Valk.png" alt="Valkyrie" class="card-image" title="Valkyrie" loading="lazy">
-                    <div class="card-name">Valkyrie</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Witch.png" alt="Witch" class="card-image" title="Witch" loading="lazy">
-                    <div class="card-name">Witch</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Zap.png" alt="Zap" class="card-image" title="Zap" loading="lazy">
-                    <div class="card-name">Zap</div>
-                </div>
-            </div>
-                    </div>
-                
-                    <div class="popular-deck-item">
-                        <div class="deck-popularity">
-                            <span class="deck-rank">#5</span>
-                            <div class="deck-info">
-                                <span class="usage-count">1 member</span>
-                                <span class="users-list">troll bogey</span>
-                            </div>
-                        </div>
-                        <div class="deck-cards">
-                <div class="card-container">
-                    <img src="cards/normal_cards/Arrows.png" alt="Arrows" class="card-image" title="Arrows" loading="lazy">
-                    <div class="card-name">Arrows</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Barbs.png" alt="Barbarians" class="card-image" title="Barbarians" loading="lazy">
-                    <div class="card-name">Barbarians</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Firecracker.png" alt="Firecracker" class="card-image" title="Firecracker" loading="lazy">
-                    <div class="card-name">Firecracker</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/InfernoD.png" alt="Inferno Dragon" class="card-image" title="Inferno Dragon" loading="lazy">
-                    <div class="card-name">Inferno Dragon</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Lava.png" alt="Lava Hound" class="card-image" title="Lava Hound" loading="lazy">
-                    <div class="card-name">Lava Hound</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Lumber.png" alt="Lumberjack" class="card-image" title="Lumberjack" loading="lazy">
-                    <div class="card-name">Lumberjack</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/Skarmy.png" alt="Skeleton Army" class="card-image" title="Skeleton Army" loading="lazy">
-                    <div class="card-name">Skeleton Army</div>
-                </div>
-            
-                <div class="card-container">
-                    <img src="cards/normal_cards/SkeletonDragons.png" alt="Skeleton Dragons" class="card-image" title="Skeleton Dragons" loading="lazy">
-                    <div class="card-name">Skeleton Dragons</div>
-                </div>
-            </div>
-                    </div>
-                </div><div class="analytics-section"><h3>⭐ Most Popular Favorite Cards</h3><div class="favorite-cards-grid">
+            <div class="analytics-section"><h3>⭐ Most Popular Favorite Cards</h3><div class="favorite-cards-grid">
                     <div class="favorite-card-item">
                         <img src="cards/normal_cards/MegaKnight.png" alt="Mega Knight" class="favorite-card-image">
                         <div class="favorite-card-info">
@@ -526,59 +302,11 @@
                             <span class="usage-count">1 member</span>
                         </div>
                     </div>
-                </div></div><div class="analytics-section"><h3>🔄 Deck Experimenters</h3><div class="experimenters-list">
-                        <div class="experimenter-item">
-                            <span class="member-name">Muy Pronto</span>
-                            <span class="change-count">49 deck changes</span>
-                        </div>
-                    
-                        <div class="experimenter-item">
-                            <span class="member-name">boontmeister</span>
-                            <span class="change-count">30 deck changes</span>
-                        </div>
-                    
-                        <div class="experimenter-item">
-                            <span class="member-name">~Fear The Mutt~</span>
-                            <span class="change-count">21 deck changes</span>
-                        </div>
-                    
-                        <div class="experimenter-item">
-                            <span class="member-name">Captain Doom</span>
-                            <span class="change-count">20 deck changes</span>
-                        </div>
-                    
-                        <div class="experimenter-item">
-                            <span class="member-name">ItzBex</span>
-                            <span class="change-count">18 deck changes</span>
-                        </div>
-                    
-                        <div class="experimenter-item">
-                            <span class="member-name">Ferndog</span>
-                            <span class="change-count">18 deck changes</span>
-                        </div>
-                    
-                        <div class="experimenter-item">
-                            <span class="member-name">King Duncan</span>
-                            <span class="change-count">13 deck changes</span>
-                        </div>
-                    
-                        <div class="experimenter-item">
-                            <span class="member-name">Bye Marv</span>
-                            <span class="change-count">12 deck changes</span>
-                        </div>
-                    
-                        <div class="experimenter-item">
-                            <span class="member-name">charlatan</span>
-                            <span class="change-count">11 deck changes</span>
-                        </div>
-                    
-                        <div class="experimenter-item">
-                            <span class="member-name">Noah</span>
-                            <span class="change-count">8 deck changes</span>
-                        </div>
-                    </div></div>
+                </div></div>
         </div>
+        -->
 
+        <!-- Clan Rankings & Progression section - REMOVED for cleaner interface
         <div class="section">
             <h2>🏆 Clan Rankings & Progression</h2>
             <p style="color: #666; margin-bottom: 15px; font-style: italic;">
@@ -602,7 +330,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 32 minutes ago
+                                🕒 3 hours ago
                             </div>
                         </div>
                     </div>
@@ -625,7 +353,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 16 hours ago
+                                🕒 19 hours ago
                             </div>
                         </div>
                     </div>
@@ -648,7 +376,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 1 hours ago
+                                🕒 4 hours ago
                             </div>
                         </div>
                     </div>
@@ -671,7 +399,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 1 hours ago
+                                🕒 4 hours ago
                             </div>
                         </div>
                     </div>
@@ -694,7 +422,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 3 hours ago
+                                🕒 6 hours ago
                             </div>
                         </div>
                     </div>
@@ -717,7 +445,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 6 hours ago
+                                🕒 9 hours ago
                             </div>
                         </div>
                     </div>
@@ -740,7 +468,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 20 hours ago
+                                🕒 23 hours ago
                             </div>
                         </div>
                     </div>
@@ -763,7 +491,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 2 hours ago
+                                🕒 5 hours ago
                             </div>
                         </div>
                     </div>
@@ -786,7 +514,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 8 hours ago
+                                🕒 11 hours ago
                             </div>
                         </div>
                     </div>
@@ -809,7 +537,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 4 hours ago
+                                🕒 7 hours ago
                             </div>
                         </div>
                     </div>
@@ -832,7 +560,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 11 minutes ago
+                                🕒 3 hours ago
                             </div>
                         </div>
                     </div>
@@ -855,7 +583,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 2 hours ago
+                                🕒 5 hours ago
                             </div>
                         </div>
                     </div>
@@ -878,7 +606,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 2 hours ago
+                                🕒 5 hours ago
                             </div>
                         </div>
                     </div>
@@ -901,7 +629,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 8 hours ago
+                                🕒 11 hours ago
                             </div>
                         </div>
                     </div>
@@ -924,7 +652,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 4 hours ago
+                                🕒 7 hours ago
                             </div>
                         </div>
                     </div>
@@ -947,7 +675,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 4 hours ago
+                                🕒 7 hours ago
                             </div>
                         </div>
                     </div>
@@ -1016,7 +744,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 19 days ago
+                                🕒 20 days ago
                             </div>
                         </div>
                     </div>
@@ -1039,7 +767,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 1 hours ago
+                                🕒 4 hours ago
                             </div>
                         </div>
                     </div>
@@ -1062,7 +790,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 4 hours ago
+                                🕒 7 hours ago
                             </div>
                         </div>
                     </div>
@@ -1108,7 +836,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 42 minutes ago
+                                🕒 3 hours ago
                             </div>
                         </div>
                     </div>
@@ -1131,7 +859,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 20 hours ago
+                                🕒 23 hours ago
                             </div>
                         </div>
                     </div>
@@ -1154,7 +882,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 239 days ago
+                                🕒 240 days ago
                             </div>
                         </div>
                     </div>
@@ -1177,7 +905,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 4 hours ago
+                                🕒 7 hours ago
                             </div>
                         </div>
                     </div>
@@ -1223,7 +951,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 22 minutes ago
+                                🕒 3 hours ago
                             </div>
                         </div>
                     </div>
@@ -1292,7 +1020,7 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 19 hours ago
+                                🕒 22 hours ago
                             </div>
                         </div>
                     </div>
@@ -1338,13 +1066,14 @@
                                 <span class="donation-neutral">0</span>
                             </div>
                             <div class="last-seen-info">
-                                🕒 20 hours ago
+                                🕒 23 hours ago
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        -->
 
         <div class="section">
             <h2>🏰 Clan Member Activity</h2>
@@ -1352,15 +1081,25 @@
                 Click on any member name to view their detailed deck change history.
             </p>
             <div class="desktop-table">
-                <table>
-                    <thead><tr><th>Name</th><th>Role</th><th>Trophies</th><th>Donations</th><th>Last Seen</th></tr></thead>
+                <table id="clan-members-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="name">Name <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="role">Role <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="trophies">Trophies <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="donations">Donations <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="deck-changes">Deck Changes <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="last-seen">Last Seen <span class="sort-indicator">↕</span></th>
+                        </tr>
+                    </thead>
                     <tbody>
                 <tr class="">
                     <td><a href="member_ocean_eyes.html" style="color: #4299e1; text-decoration: none; font-weight: bold;">Ocean Eyes</a></td>
                     <td><span class="role-leader">leader</span></td>
                     <td>9,171</td>
                     <td>52↑ 0↓</td>
-                    <td>2 hours ago</td>
+                    <td>1</td>
+                    <td>5 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1368,7 +1107,8 @@
                     <td><span class="role-co-leader">Co-Leader</span></td>
                     <td>9,832</td>
                     <td>50↑ 0↓</td>
-                    <td>1 hours ago</td>
+                    <td>1</td>
+                    <td>4 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1376,7 +1116,8 @@
                     <td><span class="role-co-leader">Co-Leader</span></td>
                     <td>9,635</td>
                     <td>58↑ 0↓</td>
-                    <td>1 hours ago</td>
+                    <td>1</td>
+                    <td>4 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1384,7 +1125,8 @@
                     <td><span class="role-co-leader">Co-Leader</span></td>
                     <td>8,035</td>
                     <td>0↑ 0↓</td>
-                    <td>19 days ago</td>
+                    <td>1</td>
+                    <td>20 days ago</td>
                 </tr>
             
                 <tr class="">
@@ -1392,7 +1134,8 @@
                     <td><span class="role-co-leader">Co-Leader</span></td>
                     <td>7,856</td>
                     <td>24↑ 0↓</td>
-                    <td>1 hours ago</td>
+                    <td>1</td>
+                    <td>4 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1400,7 +1143,8 @@
                     <td><span class="role-co-leader">Co-Leader</span></td>
                     <td>7,317</td>
                     <td>0↑ 0↓</td>
-                    <td>239 days ago</td>
+                    <td>1</td>
+                    <td>240 days ago</td>
                 </tr>
             
                 <tr class="">
@@ -1408,7 +1152,8 @@
                     <td><span class="role-elder">elder</span></td>
                     <td>10,000</td>
                     <td>0↑ 0↓</td>
-                    <td>16 hours ago</td>
+                    <td>12</td>
+                    <td>19 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1416,7 +1161,8 @@
                     <td><span class="role-elder">elder</span></td>
                     <td>8,986</td>
                     <td>18↑ 0↓</td>
-                    <td>8 hours ago</td>
+                    <td>1</td>
+                    <td>11 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1424,7 +1170,8 @@
                     <td><span class="role-elder">elder</span></td>
                     <td>8,862</td>
                     <td>0↑ 0↓</td>
-                    <td>11 minutes ago</td>
+                    <td>1</td>
+                    <td>3 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1432,7 +1179,8 @@
                     <td><span class="role-elder">elder</span></td>
                     <td>8,807</td>
                     <td>18↑ 0↓</td>
-                    <td>2 hours ago</td>
+                    <td>1</td>
+                    <td>5 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1440,7 +1188,8 @@
                     <td><span class="role-elder">elder</span></td>
                     <td>8,528</td>
                     <td>10↑ 0↓</td>
-                    <td>8 hours ago</td>
+                    <td>5</td>
+                    <td>11 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1448,7 +1197,8 @@
                     <td><span class="role-elder">elder</span></td>
                     <td>7,703</td>
                     <td>26↑ 0↓</td>
-                    <td>4 hours ago</td>
+                    <td>1</td>
+                    <td>7 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1456,6 +1206,7 @@
                     <td><span class="role-elder">elder</span></td>
                     <td>7,119</td>
                     <td>0↑ 0↓</td>
+                    <td>1</td>
                     <td>17 days ago</td>
                 </tr>
             
@@ -1464,6 +1215,7 @@
                     <td><span class="role-elder">elder</span></td>
                     <td>6,145</td>
                     <td>0↑ 0↓</td>
+                    <td>1</td>
                     <td>217 days ago</td>
                 </tr>
             
@@ -1472,7 +1224,8 @@
                     <td><span class="role-member">member</span></td>
                     <td>10,000</td>
                     <td>18↑ 0↓</td>
-                    <td>32 minutes ago</td>
+                    <td>5</td>
+                    <td>3 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1480,7 +1233,8 @@
                     <td><span class="role-member">member</span></td>
                     <td>9,523</td>
                     <td>18↑ 0↓</td>
-                    <td>3 hours ago</td>
+                    <td>9</td>
+                    <td>6 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1488,7 +1242,8 @@
                     <td><span class="role-member">member</span></td>
                     <td>9,501</td>
                     <td>8↑ 0↓</td>
-                    <td>6 hours ago</td>
+                    <td>1</td>
+                    <td>9 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1496,7 +1251,8 @@
                     <td><span class="role-member">member</span></td>
                     <td>9,500</td>
                     <td>8↑ 0↓</td>
-                    <td>20 hours ago</td>
+                    <td>5</td>
+                    <td>23 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1504,7 +1260,8 @@
                     <td><span class="role-member">member</span></td>
                     <td>8,882</td>
                     <td>0↑ 0↓</td>
-                    <td>4 hours ago</td>
+                    <td>9</td>
+                    <td>7 hours ago</td>
                 </tr>
             
                 <tr class="">
@@ -1512,7 +1269,8 @@
                     <td><span class="role-member">member</span></td>
                     <td>8,683</td>
                     <td>10↑ 120↓</td>
-                    <td>2 hours ago</td>
+                    <td>5</td>
+                    <td>5 hours ago</td>
                 </tr>
             </tbody>
                 </table>
@@ -1527,9 +1285,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 9,171</span>
                             <span class="donation-stats">📦 52↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 2 hours ago</span>
+                            <span class="last-seen">🕒 5 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1543,9 +1302,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 9,832</span>
                             <span class="donation-stats">📦 50↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 1 hours ago</span>
+                            <span class="last-seen">🕒 4 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1559,9 +1319,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 9,635</span>
                             <span class="donation-stats">📦 58↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 1 hours ago</span>
+                            <span class="last-seen">🕒 4 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1575,9 +1336,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 8,035</span>
                             <span class="donation-stats">📦 0↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 19 days ago</span>
+                            <span class="last-seen">🕒 20 days ago</span>
                         </div>
                     </div>
                 </div>
@@ -1591,9 +1353,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 7,856</span>
                             <span class="donation-stats">📦 24↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 1 hours ago</span>
+                            <span class="last-seen">🕒 4 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1607,9 +1370,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 7,317</span>
                             <span class="donation-stats">📦 0↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 239 days ago</span>
+                            <span class="last-seen">🕒 240 days ago</span>
                         </div>
                     </div>
                 </div>
@@ -1623,9 +1387,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 10,000</span>
                             <span class="donation-stats">📦 0↑ 0↓</span>
+                            <span class="deck-changes">🔄 12 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 16 hours ago</span>
+                            <span class="last-seen">🕒 19 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1639,9 +1404,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 8,986</span>
                             <span class="donation-stats">📦 18↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 8 hours ago</span>
+                            <span class="last-seen">🕒 11 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1655,9 +1421,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 8,862</span>
                             <span class="donation-stats">📦 0↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 11 minutes ago</span>
+                            <span class="last-seen">🕒 3 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1671,9 +1438,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 8,807</span>
                             <span class="donation-stats">📦 18↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 2 hours ago</span>
+                            <span class="last-seen">🕒 5 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1687,9 +1455,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 8,528</span>
                             <span class="donation-stats">📦 10↑ 0↓</span>
+                            <span class="deck-changes">🔄 5 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 8 hours ago</span>
+                            <span class="last-seen">🕒 11 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1703,9 +1472,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 7,703</span>
                             <span class="donation-stats">📦 26↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 4 hours ago</span>
+                            <span class="last-seen">🕒 7 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1719,6 +1489,7 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 7,119</span>
                             <span class="donation-stats">📦 0↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
                             <span class="last-seen">🕒 17 days ago</span>
@@ -1735,6 +1506,7 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 6,145</span>
                             <span class="donation-stats">📦 0↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
                             <span class="last-seen">🕒 217 days ago</span>
@@ -1751,9 +1523,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 10,000</span>
                             <span class="donation-stats">📦 18↑ 0↓</span>
+                            <span class="deck-changes">🔄 5 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 32 minutes ago</span>
+                            <span class="last-seen">🕒 3 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1767,9 +1540,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 9,523</span>
                             <span class="donation-stats">📦 18↑ 0↓</span>
+                            <span class="deck-changes">🔄 9 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 3 hours ago</span>
+                            <span class="last-seen">🕒 6 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1783,9 +1557,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 9,501</span>
                             <span class="donation-stats">📦 8↑ 0↓</span>
+                            <span class="deck-changes">🔄 1 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 6 hours ago</span>
+                            <span class="last-seen">🕒 9 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1799,9 +1574,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 9,500</span>
                             <span class="donation-stats">📦 8↑ 0↓</span>
+                            <span class="deck-changes">🔄 5 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 20 hours ago</span>
+                            <span class="last-seen">🕒 23 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1815,9 +1591,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 8,882</span>
                             <span class="donation-stats">📦 0↑ 0↓</span>
+                            <span class="deck-changes">🔄 9 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 4 hours ago</span>
+                            <span class="last-seen">🕒 7 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1831,9 +1608,10 @@
                         <div class="member-stats">
                             <span class="trophy-count">🏆 8,683</span>
                             <span class="donation-stats">📦 10↑ 120↓</span>
+                            <span class="deck-changes">🔄 5 deck changes</span>
                         </div>
                         <div class="member-activity">
-                            <span class="last-seen">🕒 2 hours ago</span>
+                            <span class="last-seen">🕒 5 hours ago</span>
                         </div>
                     </div>
                 </div>
@@ -1841,11 +1619,111 @@
         </div>
 
         <div class="footer">
-            <p>Clan report generated on 2025-08-14 20:18:56</p>
-            <p>Data last updated: just now</p>
+            <p>Clan report generated on 2025-08-14 18:14:20</p>
+            <p>Data last updated: 2 hours ago</p>
             <p><a href="index.html" class="back-link">← Back to Main Dashboard</a></p>
         </div>
     </div>
+    
+    <script>
+    // Table sorting functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        var table = document.getElementById('clan-members-table');
+        var headers = table.querySelectorAll('th.sortable');
+        var currentSort = { column: '', direction: '' };
+        
+        headers.forEach(function(header) {
+            header.addEventListener('click', function() {
+                var column = this.getAttribute('data-column');
+                var direction = currentSort.column === column && currentSort.direction === 'asc' ? 'desc' : 'asc';
+                
+                // Remove existing sort classes
+                headers.forEach(function(h) { h.classList.remove('sort-asc', 'sort-desc'); });
+                
+                // Add sort class to current header
+                this.classList.add('sort-' + direction);
+                
+                // Sort the table
+                sortTable(column, direction);
+                
+                currentSort = { column: column, direction: direction };
+            });
+        });
+        
+        function sortTable(column, direction) {
+            var tbody = table.querySelector('tbody');
+            var rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            rows.sort(function(a, b) {
+                var aVal, bVal;
+                
+                switch(column) {
+                    case 'name':
+                        aVal = a.cells[0].textContent.trim().toLowerCase();
+                        bVal = b.cells[0].textContent.trim().toLowerCase();
+                        break;
+                    case 'role':
+                        // Custom role order: leader > co-leader > elder > member
+                        var roleOrder = {'leader': 1, 'co-leader': 2, 'elder': 3, 'member': 4};
+                        aVal = roleOrder[a.cells[1].textContent.trim().toLowerCase()] || 5;
+                        bVal = roleOrder[b.cells[1].textContent.trim().toLowerCase()] || 5;
+                        break;
+                    case 'trophies':
+                        aVal = parseInt(a.cells[2].textContent.replace(/,/g, '')) || 0;
+                        bVal = parseInt(b.cells[2].textContent.replace(/,/g, '')) || 0;
+                        break;
+                    case 'donations':
+                        // Extract total donations (sent + received)
+                        var aDonations = a.cells[3].textContent.match(/(\d+)↑\s*(\d+)↓/);
+                        var bDonations = b.cells[3].textContent.match(/(\d+)↑\s*(\d+)↓/);
+                        aVal = aDonations ? parseInt(aDonations[1]) + parseInt(aDonations[2]) : 0;
+                        bVal = bDonations ? parseInt(bDonations[1]) + parseInt(bDonations[2]) : 0;
+                        break;
+                    case 'deck-changes':
+                        aVal = parseInt(a.cells[4].textContent) || 0;
+                        bVal = parseInt(b.cells[4].textContent) || 0;
+                        break;
+                    case 'last-seen':
+                        // Parse relative time strings for sorting
+                        aVal = parseTimeAgo(a.cells[5].textContent.trim());
+                        bVal = parseTimeAgo(b.cells[5].textContent.trim());
+                        break;
+                    default:
+                        aVal = a.cells[0].textContent.trim();
+                        bVal = b.cells[0].textContent.trim();
+                }
+                
+                if (direction === 'asc') {
+                    return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+                } else {
+                    return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+                }
+            });
+            
+            // Re-append sorted rows
+            rows.forEach(function(row) { tbody.appendChild(row); });
+        }
+        
+        function parseTimeAgo(timeStr) {
+            // Convert time ago strings to minutes for sorting
+            if (timeStr === 'never') return 999999;
+            if (timeStr.includes('hours ago')) {
+                return parseInt(timeStr) * 60;
+            } else if (timeStr.includes('days ago')) {
+                return parseInt(timeStr) * 24 * 60;
+            } else if (timeStr.includes('minutes ago')) {
+                return parseInt(timeStr);
+            } else if (timeStr.includes('hour ago')) {
+                return 60;
+            } else if (timeStr.includes('day ago')) {
+                return 24 * 60;
+            } else if (timeStr.includes('minute ago')) {
+                return 1;
+            }
+            return 0; // "just now" or unrecognized format
+        }
+    });
+    </script>
 </body>
 </html>
         

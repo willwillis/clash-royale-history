@@ -16,7 +16,7 @@ class MemberPageGenerator(GitHubPagesHTMLGenerator):
         super().__init__(db_path)
     
     def get_member_deck_history(self, player_tag: str) -> List[Dict]:
-        """Get complete deck change history for a member"""
+        """Get complete deck change history for a member, consolidating consecutive identical decks"""
         if not os.path.exists(self.db_path):
             return []
             
@@ -42,17 +42,12 @@ class MemberPageGenerator(GitHubPagesHTMLGenerator):
                 last_seen
             FROM clan_member_decks 
             WHERE player_tag = ?
-            ORDER BY first_seen DESC
+            ORDER BY first_seen ASC
         """, (player_tag,))
         
-        deck_history = []
+        raw_history = []
         for row in cursor.fetchall():
-            # Calculate duration
-            first_seen = row[7]
-            last_seen = row[8]
-            duration = self.calculate_deck_duration(first_seen, last_seen)
-            
-            deck_history.append({
+            raw_history.append({
                 'deck_cards': row[0],
                 'favorite_card': row[1],
                 'arena_name': row[2],
@@ -60,13 +55,45 @@ class MemberPageGenerator(GitHubPagesHTMLGenerator):
                 'exp_level': row[4],
                 'trophies': row[5],
                 'best_trophies': row[6],
-                'first_seen': first_seen,
-                'last_seen': last_seen,
-                'duration': duration
+                'first_seen': row[7],
+                'last_seen': row[8]
             })
         
         conn.close()
-        return deck_history
+        
+        # Consolidate consecutive identical decks (same deck_cards)
+        consolidated_history = []
+        current_deck = None
+        
+        for record in raw_history:
+            if current_deck is None or current_deck['deck_cards'] != record['deck_cards']:
+                # Start a new deck period
+                if current_deck is not None:
+                    # Finalize the previous deck
+                    duration = self.calculate_deck_duration(current_deck['first_seen'], current_deck['last_seen'])
+                    current_deck['duration'] = duration
+                    consolidated_history.append(current_deck)
+                
+                # Start new deck period
+                current_deck = record.copy()
+            else:
+                # Same deck, extend the period and update latest info
+                current_deck['last_seen'] = record['last_seen']
+                current_deck['favorite_card'] = record['favorite_card']  # Use most recent favorite card
+                current_deck['arena_name'] = record['arena_name']
+                current_deck['league_name'] = record['league_name']
+                current_deck['exp_level'] = record['exp_level']
+                current_deck['trophies'] = record['trophies']
+                current_deck['best_trophies'] = record['best_trophies']
+        
+        # Don't forget the last deck
+        if current_deck is not None:
+            duration = self.calculate_deck_duration(current_deck['first_seen'], current_deck['last_seen'])
+            current_deck['duration'] = duration
+            consolidated_history.append(current_deck)
+        
+        # Return in reverse chronological order (most recent first)
+        return list(reversed(consolidated_history))
     
     def calculate_deck_duration(self, first_seen: str, last_seen: str) -> str:
         """Calculate how long a deck was used"""
@@ -207,7 +234,7 @@ class MemberPageGenerator(GitHubPagesHTMLGenerator):
             is_current = i == 0  # First item is most recent
             timeline_class = "timeline-current" if is_current else "timeline-past"
             
-            deck_cards_html = self.generate_deck_cards_html(deck['deck_cards'])
+            deck_cards_html = self.generate_deck_cards_html(deck['deck_cards'], show_names=False)
             
             timeline_html += f'''
                 <div class="timeline-item {timeline_class}">
