@@ -963,6 +963,65 @@
             }
         }
         
+        /* Sortable table styles */
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: background-color 0.2s ease;
+        }
+        
+        .sortable:hover {
+            background-color: #3182ce !important;
+        }
+        
+        .sort-indicator {
+            font-size: 0.8em;
+            margin-left: 5px;
+            opacity: 0.6;
+        }
+        
+        .sortable.sort-asc .sort-indicator:after {
+            content: " ↑";
+            color: #38a169;
+            font-weight: bold;
+        }
+        
+        .sortable.sort-desc .sort-indicator:after {
+            content: " ↓";
+            color: #e53e3e;
+            font-weight: bold;
+        }
+        
+        /* Responsive histogram styles */
+        .histogram-desktop {
+            display: block;
+        }
+        
+        .histogram-mobile {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .histogram-desktop {
+                display: none;
+            }
+            
+            .histogram-mobile {
+                display: block;
+            }
+            
+            .histogram-mobile .stacked-histogram {
+                height: 180px;
+                padding: 20px 5px 30px 5px;
+            }
+            
+            .histogram-mobile .histogram-bar {
+                max-width: 20px;
+                margin: 0 2px;
+            }
+        }
+        
         
         /* Member Page Specific Styles */
         .page-header {
@@ -1136,7 +1195,7 @@
             <div class="member-role role-member">member</div>
             <div class="member-stats">
                 <div class="member-stat">
-                    <div class="value">8,255</div>
+                    <div class="value">8,225</div>
                     <div class="label">Current Trophies</div>
                 </div>
                 <div class="member-stat">
@@ -1148,7 +1207,7 @@
                     <div class="label">Donations Received</div>
                 </div>
                 <div class="member-stat">
-                    <div class="value">41</div>
+                    <div class="value">42</div>
                     <div class="label">Deck Changes</div>
                 </div>
             </div>
@@ -1162,12 +1221,30 @@
             <div class="deck-timeline">
                 <div class="timeline-item timeline-current">
                     <div class="timeline-marker">
+                        <div class="timeline-date">August 15, 2025</div>
+                        <div class="timeline-duration">Less than a minute</div>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="deck-header">
+                            <h3>Current Deck</h3>
+                            <div class="deck-stats">
+                                <span class="stat">⭐ Inferno Tower</span>
+                                <span class="stat">🏆 8,225</span>
+                                <span class="stat">🏟️ Clash Fest</span>
+                            </div>
+                        </div>
+                        <div class="deck-cards-compact"><div class="card-container"><img src="cards/normal_cards/Arrows.png" alt="Arrows" class="card-image" title="Arrows" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Bats.png" alt="Bats" class="card-image" title="Bats" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/CannonCart.png" alt="Cannon Cart" class="card-image" title="Cannon Cart" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Fireball.png" alt="Fireball" class="card-image" title="Fireball" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/IceSpirit.png" alt="Ice Spirit" class="card-image" title="Ice Spirit" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/IceWiz.png" alt="Ice Wizard" class="card-image" title="Ice Wizard" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/SkellyBarrel.png" alt="Skeleton Barrel" class="card-image" title="Skeleton Barrel" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/SkeletonKing.png" alt="Skeleton King" class="card-image" title="Skeleton King" loading="lazy"></div></div>
+                    </div>
+                </div>
+            
+                <div class="timeline-item timeline-past">
+                    <div class="timeline-marker">
                         <div class="timeline-date">August 14, 2025</div>
                         <div class="timeline-duration">3 hours</div>
                     </div>
                     <div class="timeline-content">
                         <div class="deck-header">
-                            <h3>Current Deck</h3>
+                            <h3>Previous Deck</h3>
                             <div class="deck-stats">
                                 <span class="stat">⭐ Inferno Tower</span>
                                 <span class="stat">🏆 8,255</span>
@@ -1901,8 +1978,8 @@
         </div>
 
         <div class="footer">
-            <p>Member profile generated on 2025-08-14 18:17:33</p>
-            <p>Last seen: 7 hours ago</p>
+            <p>Member profile generated on 2025-08-15 01:58:47</p>
+            <p>Last seen: 4 hours ago</p>
             <p><a href="clan.html" class="back-link">← Back to Clan Analytics</a></p>
         </div>
     </div>

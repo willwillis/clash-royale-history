@@ -963,6 +963,65 @@
             }
         }
         
+        /* Sortable table styles */
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: background-color 0.2s ease;
+        }
+        
+        .sortable:hover {
+            background-color: #3182ce !important;
+        }
+        
+        .sort-indicator {
+            font-size: 0.8em;
+            margin-left: 5px;
+            opacity: 0.6;
+        }
+        
+        .sortable.sort-asc .sort-indicator:after {
+            content: " ↑";
+            color: #38a169;
+            font-weight: bold;
+        }
+        
+        .sortable.sort-desc .sort-indicator:after {
+            content: " ↓";
+            color: #e53e3e;
+            font-weight: bold;
+        }
+        
+        /* Responsive histogram styles */
+        .histogram-desktop {
+            display: block;
+        }
+        
+        .histogram-mobile {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .histogram-desktop {
+                display: none;
+            }
+            
+            .histogram-mobile {
+                display: block;
+            }
+            
+            .histogram-mobile .stacked-histogram {
+                height: 180px;
+                padding: 20px 5px 30px 5px;
+            }
+            
+            .histogram-mobile .histogram-bar {
+                max-width: 20px;
+                margin: 0 2px;
+            }
+        }
+        
         
         /* Member Page Specific Styles */
         .page-header {
@@ -1144,11 +1203,11 @@
                     <div class="label">Donations Given</div>
                 </div>
                 <div class="member-stat">
-                    <div class="value">80</div>
+                    <div class="value">104</div>
                     <div class="label">Donations Received</div>
                 </div>
                 <div class="member-stat">
-                    <div class="value">4</div>
+                    <div class="value">5</div>
                     <div class="label">Deck Changes</div>
                 </div>
             </div>
@@ -1162,12 +1221,30 @@
             <div class="deck-timeline">
                 <div class="timeline-item timeline-current">
                     <div class="timeline-marker">
+                        <div class="timeline-date">August 15, 2025</div>
+                        <div class="timeline-duration">Less than a minute</div>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="deck-header">
+                            <h3>Current Deck</h3>
+                            <div class="deck-stats">
+                                <span class="stat">⭐ Mega Knight</span>
+                                <span class="stat">🏆 8,358</span>
+                                <span class="stat">🏟️ Clash Fest</span>
+                            </div>
+                        </div>
+                        <div class="deck-cards-compact"><div class="card-container"><img src="cards/normal_cards/Bats.png" alt="Bats" class="card-image" title="Bats" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/eWiz.png" alt="Electro Wizard" class="card-image" title="Electro Wizard" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/LittlePrince.png" alt="Little Prince" class="card-image" title="Little Prince" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/MegaKnight.png" alt="Mega Knight" class="card-image" title="Mega Knight" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/MP.png" alt="Mini P.E.K.K.A" class="card-image" title="Mini P.E.K.K.A" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Skarmy.png" alt="Skeleton Army" class="card-image" title="Skeleton Army" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Valk.png" alt="Valkyrie" class="card-image" title="Valkyrie" loading="lazy"></div><div class="card-container"><img src="cards/normal_cards/Zap.png" alt="Zap" class="card-image" title="Zap" loading="lazy"></div></div>
+                    </div>
+                </div>
+            
+                <div class="timeline-item timeline-past">
+                    <div class="timeline-marker">
                         <div class="timeline-date">August 14, 2025</div>
                         <div class="timeline-duration">3 hours</div>
                     </div>
                     <div class="timeline-content">
                         <div class="deck-header">
-                            <h3>Current Deck</h3>
+                            <h3>Previous Deck</h3>
                             <div class="deck-stats">
                                 <span class="stat">⭐ Mega Knight</span>
                                 <span class="stat">🏆 8,358</span>
@@ -1235,8 +1312,8 @@
         </div>
 
         <div class="footer">
-            <p>Member profile generated on 2025-08-14 18:17:33</p>
-            <p>Last seen: 7 hours ago</p>
+            <p>Member profile generated on 2025-08-15 01:58:47</p>
+            <p>Last seen: 1 hours ago</p>
             <p><a href="clan.html" class="back-link">← Back to Clan Analytics</a></p>
         </div>
     </div>
