@@ -752,14 +752,6 @@ class GitHubPagesHTMLGenerator:
                     <span class="legend-color legend-losses"></span>
                     <span>Losses</span>
                 </div>
-                <div class="legend-item">
-                    <span class="legend-color legend-draws"></span>
-                    <span>Draws</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color legend-empty"></span>
-                    <span>No Battles</span>
-                </div>
             </div>
             '''
         
