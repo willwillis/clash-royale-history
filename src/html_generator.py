@@ -6,6 +6,7 @@ Generates Clash Royale analytics with relative paths for GitHub Pages
 
 import sqlite3
 import os
+import re
 from datetime import datetime, timezone
 from typing import List, Dict, Optional
 
@@ -20,6 +21,7 @@ class GitHubPagesHTMLGenerator:
             'Baby Dragon': 'BabyD',
             'Barbarian Barrel': 'BarbBarrel',
             'Barbarians': 'Barbs',
+            'Battle Healer': 'BattleHealer',
             'Goblin Barrel': 'Barrel',
             'Bomb Tower': 'BombTower',
             'Boss Bandit': 'BossBandit',
@@ -92,6 +94,13 @@ class GitHubPagesHTMLGenerator:
     def get_card_filename(self, card_name: str) -> str:
         """Convert card name to filename"""
         return self.card_name_mapping.get(card_name, card_name.replace(' ', '').replace('.', '').replace('-', ''))
+    
+    def safe_filename(self, name: str) -> str:
+        """Convert member name to safe filename"""
+        # Remove special characters and spaces
+        safe_name = re.sub(r'[^\w\s-]', '', name)
+        safe_name = re.sub(r'\s+', '_', safe_name)
+        return safe_name.lower()
     
     def get_card_image_path(self, card_name: str) -> str:
         """Get the relative path to card image for GitHub Pages"""
@@ -649,7 +658,7 @@ class GitHubPagesHTMLGenerator:
         css_class = "deck-cards-compact" if not show_names else "deck-cards"
         return f'<div class="{css_class}">{cards_html}</div>'
     
-    def generate_daily_histogram_html(self, daily_stats: List[Dict]) -> str:
+    def generate_daily_histogram_html(self, daily_stats: List[Dict], css_class: str = "", include_legend: bool = True) -> str:
         """Generate HTML for daily wins/losses stacked histogram"""
         if not daily_stats:
             return "<p>No daily battle data available for histogram.</p>"
@@ -658,8 +667,8 @@ class GitHubPagesHTMLGenerator:
         max_battles = max((day['total_battles'] for day in daily_stats), default=1)
         
         # Create custom stacked histogram
-        histogram_html = '''
-            <div class="chart-container">
+        histogram_html = f'''
+            <div class="chart-container {css_class}">
                 <div class="stacked-histogram">
         '''
         
@@ -730,8 +739,10 @@ class GitHubPagesHTMLGenerator:
             </div>
         '''
         
-        # Add legend
-        legend_html = '''
+        # Add legend only if requested
+        legend_html = ""
+        if include_legend:
+            legend_html = '''
             <div class="histogram-legend">
                 <div class="legend-item">
                     <span class="legend-color legend-wins"></span>
@@ -750,7 +761,7 @@ class GitHubPagesHTMLGenerator:
                     <span>No Battles</span>
                 </div>
             </div>
-        '''
+            '''
         
         return histogram_html + legend_html
     
@@ -972,6 +983,97 @@ class GitHubPagesHTMLGenerator:
         
         return html
     
+    def generate_clan_member_activity_html(self, clan_members: List[Dict], deck_analytics: Dict, player_name: str) -> str:
+        """Generate HTML for clan member activity section"""
+        if not clan_members:
+            return "<p>No clan member data available.</p>"
+        
+        # Create deck changes lookup
+        deck_changes_lookup = {}
+        if deck_analytics and 'deck_experimenters' in deck_analytics:
+            for experimenter in deck_analytics['deck_experimenters']:
+                deck_changes_lookup[experimenter['name']] = experimenter['deck_changes']
+        
+        # Generate clan member tables/cards (similar to clan_generator.py)
+        clan_table_html = ""
+        clan_cards_html = ""
+        
+        for member in clan_members[:20]:  # Show top 20 members
+            is_current_player = member['name'] == player_name
+            row_class = "current-player" if is_current_player else ""
+            card_class = "current-player-card" if is_current_player else ""
+            
+            role_class = {
+                'leader': 'leader',
+                'coLeader': 'co-leader', 
+                'elder': 'elder',
+                'member': 'member'
+            }.get(member['role'], 'member')
+            
+            role_display = member['role'].replace('coLeader', 'Co-Leader')
+            
+            # Create member filename and link
+            member_filename = f"member_{self.safe_filename(member['name'])}.html"
+            member_link = f'<a href="{member_filename}" style="color: #4299e1; text-decoration: none; font-weight: bold;">{member["name"]}</a>'
+            
+            # Get deck changes for this member
+            deck_changes = deck_changes_lookup.get(member['name'], 0)
+            
+            clan_table_html += f"""
+                <tr class="{row_class}">
+                    <td>{member_link}</td>
+                    <td><span class="role-{role_class}">{role_display}</span></td>
+                    <td>{member['trophies']:,}</td>
+                    <td>{member['donations']}↑ {member['donations_received']}↓</td>
+                    <td>{deck_changes}</td>
+                    <td>{self.format_time_ago(member['last_seen'])}</td>
+                </tr>
+            """
+            
+            clan_cards_html += f"""
+                <div class="clan-member-card {card_class}">
+                    <div class="member-card-header">
+                        <strong class="member-name">{member_link}</strong>
+                        <span class="role-{role_class} member-role">{role_display}</span>
+                    </div>
+                    <div class="member-card-content">
+                        <div class="member-stats">
+                            <span class="trophy-count">🏆 {member['trophies']:,}</span>
+                            <span class="donation-stats">📦 {member['donations']}↑ {member['donations_received']}↓</span>
+                            <span class="deck-changes">🔄 {deck_changes} deck changes</span>
+                        </div>
+                        <div class="member-activity">
+                            <span class="last-seen">🕒 {self.format_time_ago(member['last_seen'])}</span>
+                        </div>
+                    </div>
+                </div>
+            """
+        
+        return f"""
+        <div class="section">
+            <h2>🏰 Clan Member Activity</h2>
+            <p style="color: #666; margin-bottom: 15px; font-style: italic;">
+                Overview of clan member statistics and activity.
+            </p>
+            <div class="desktop-table">
+                <table id="clan-members-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="name">Name <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="role">Role <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="trophies">Trophies <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="donations">Donations <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="deck-changes">Deck Changes <span class="sort-indicator">↕</span></th>
+                            <th class="sortable" data-column="last-seen">Last Seen <span class="sort-indicator">↕</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>{clan_table_html}</tbody>
+                </table>
+            </div>
+            <div class="clan-member-cards">{clan_cards_html}</div>
+        </div>
+        """
+    
     def generate_html_report(self) -> str:
         """Generate complete HTML report for GitHub Pages"""
         stats = self.get_player_stats()
@@ -979,7 +1081,8 @@ class GitHubPagesHTMLGenerator:
         # battles = self.get_recent_battles(15)  # Commented out - Recent Battles section
         daily_stats = self.get_daily_battle_stats(30)
         clan_rankings = self.get_clan_rankings_data()
-        # deck_analytics = self.get_clan_deck_analytics()  # Commented out - Clan Favorite Cards section
+        clan_members = self.get_clan_members()
+        deck_analytics = self.get_clan_deck_analytics()
         # card_level_analytics = self.get_card_level_analytics()  # Commented out - Advanced Battle Analytics section
         
         if not stats:
@@ -1049,13 +1152,17 @@ class GitHubPagesHTMLGenerator:
         #         </div>
         #     """
         
-        # Generate daily histogram only (main page)
-        daily_histogram_html = self.generate_daily_histogram_html(daily_stats)
+        # Generate daily histogram for both desktop (30 days) and mobile (7 days)
+        daily_stats_7_days = self.get_daily_battle_stats(7)
+        daily_histogram_desktop = self.generate_daily_histogram_html(daily_stats, "histogram-desktop", include_legend=True)
+        daily_histogram_mobile = self.generate_daily_histogram_html(daily_stats_7_days, "histogram-mobile", include_legend=False)
+        daily_histogram_html = daily_histogram_desktop + daily_histogram_mobile
         # clan_favorite_cards_html = self.generate_clan_favorite_cards_html(deck_analytics)  # Commented out
         # card_level_analytics_html = self.generate_card_level_analytics_html(card_level_analytics)  # Commented out
+        clan_member_activity_html = self.generate_clan_member_activity_html(clan_members, deck_analytics, stats['name'])
         
         return self.generate_full_html(stats, win_rate, deck_performance_html, 
-                                     daily_histogram_html)
+                                     daily_histogram_html, clan_member_activity_html)
     
     def generate_error_page(self) -> str:
         """Generate error page when no data is available"""
@@ -2050,10 +2157,69 @@ class GitHubPagesHTMLGenerator:
                 display: none;
             }
         }
+        
+        /* Sortable table styles */
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: background-color 0.2s ease;
+        }
+        
+        .sortable:hover {
+            background-color: #3182ce !important;
+        }
+        
+        .sort-indicator {
+            font-size: 0.8em;
+            margin-left: 5px;
+            opacity: 0.6;
+        }
+        
+        .sortable.sort-asc .sort-indicator:after {
+            content: " ↑";
+            color: #38a169;
+            font-weight: bold;
+        }
+        
+        .sortable.sort-desc .sort-indicator:after {
+            content: " ↓";
+            color: #e53e3e;
+            font-weight: bold;
+        }
+        
+        /* Responsive histogram styles */
+        .histogram-desktop {
+            display: block;
+        }
+        
+        .histogram-mobile {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .histogram-desktop {
+                display: none;
+            }
+            
+            .histogram-mobile {
+                display: block;
+            }
+            
+            .histogram-mobile .stacked-histogram {
+                height: 180px;
+                padding: 20px 5px 30px 5px;
+            }
+            
+            .histogram-mobile .histogram-bar {
+                max-width: 20px;
+                margin: 0 2px;
+            }
+        }
         """
     
     def generate_full_html(self, stats, win_rate, deck_performance_html, 
-                          daily_histogram_html) -> str:
+                          daily_histogram_html, clan_member_activity_html="") -> str:
         """Generate the complete HTML document"""
         
         css_styles = self.get_base_css_styles()
@@ -2143,17 +2309,6 @@ class GitHubPagesHTMLGenerator:
         </div>
         -->
 
-        <div class="section">
-            <h2>🏰 Clan Analytics</h2>
-            <p style="color: #666; margin-bottom: 15px; font-style: italic;">
-                View detailed clan member statistics, deck analytics, and performance trends.
-            </p>
-            <div style="text-align: center; margin-top: 20px;">
-                <a href="clan.html" class="clan-analytics-link">
-                    View Full Clan Analytics →
-                </a>
-            </div>
-        </div>
 
         <!-- COMMENTED OUT - Advanced Battle Analytics Section
         <div class="section">
@@ -2165,12 +2320,116 @@ class GitHubPagesHTMLGenerator:
         </div>
         -->
 
+        {clan_member_activity_html}
+
         <div class="footer">
             <p>Report generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
             <p>Data last updated: {self.format_time_ago(stats['last_updated'])}</p>
             <p>Automatically updated via GitHub Actions</p>
         </div>
     </div>
+    
+    <script>
+    // Table sorting functionality
+    document.addEventListener('DOMContentLoaded', function() {{
+        var table = document.getElementById('clan-members-table');
+        if (!table) return; // Exit if table doesn't exist
+        
+        var headers = table.querySelectorAll('th.sortable');
+        var currentSort = {{ column: '', direction: '' }};
+        
+        headers.forEach(function(header) {{
+            header.addEventListener('click', function() {{
+                var column = this.getAttribute('data-column');
+                var direction = currentSort.column === column && currentSort.direction === 'asc' ? 'desc' : 'asc';
+                
+                // Remove existing sort classes
+                headers.forEach(function(h) {{ h.classList.remove('sort-asc', 'sort-desc'); }});
+                
+                // Add sort class to current header
+                this.classList.add('sort-' + direction);
+                
+                // Sort the table
+                sortTable(column, direction);
+                
+                currentSort = {{ column: column, direction: direction }};
+            }});
+        }});
+        
+        function sortTable(column, direction) {{
+            var tbody = table.querySelector('tbody');
+            var rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            rows.sort(function(a, b) {{
+                var aVal, bVal;
+                
+                switch(column) {{
+                    case 'name':
+                        aVal = a.cells[0].textContent.trim().toLowerCase();
+                        bVal = b.cells[0].textContent.trim().toLowerCase();
+                        break;
+                    case 'role':
+                        // Custom role order: leader > co-leader > elder > member
+                        var roleOrder = {{'leader': 1, 'co-leader': 2, 'elder': 3, 'member': 4}};
+                        aVal = roleOrder[a.cells[1].textContent.trim().toLowerCase()] || 5;
+                        bVal = roleOrder[b.cells[1].textContent.trim().toLowerCase()] || 5;
+                        break;
+                    case 'trophies':
+                        aVal = parseInt(a.cells[2].textContent.replace(/,/g, '')) || 0;
+                        bVal = parseInt(b.cells[2].textContent.replace(/,/g, '')) || 0;
+                        break;
+                    case 'donations':
+                        // Extract total donations (sent + received)
+                        var aDonations = a.cells[3].textContent.match(/(\\d+)↑\\s*(\\d+)↓/);
+                        var bDonations = b.cells[3].textContent.match(/(\\d+)↑\\s*(\\d+)↓/);
+                        aVal = aDonations ? parseInt(aDonations[1]) + parseInt(aDonations[2]) : 0;
+                        bVal = bDonations ? parseInt(bDonations[1]) + parseInt(bDonations[2]) : 0;
+                        break;
+                    case 'deck-changes':
+                        aVal = parseInt(a.cells[4].textContent) || 0;
+                        bVal = parseInt(b.cells[4].textContent) || 0;
+                        break;
+                    case 'last-seen':
+                        // Parse relative time strings for sorting
+                        aVal = parseTimeAgo(a.cells[5].textContent.trim());
+                        bVal = parseTimeAgo(b.cells[5].textContent.trim());
+                        break;
+                    default:
+                        aVal = a.cells[0].textContent.trim();
+                        bVal = b.cells[0].textContent.trim();
+                }}
+                
+                if (direction === 'asc') {{
+                    return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+                }} else {{
+                    return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+                }}
+            }});
+            
+            // Re-append sorted rows
+            rows.forEach(function(row) {{ tbody.appendChild(row); }});
+        }}
+        
+        function parseTimeAgo(timeStr) {{
+            // Convert time ago strings to minutes for sorting
+            if (timeStr === 'never') return 999999;
+            if (timeStr.includes('hours ago')) {{
+                return parseInt(timeStr) * 60;
+            }} else if (timeStr.includes('days ago')) {{
+                return parseInt(timeStr) * 24 * 60;
+            }} else if (timeStr.includes('minutes ago')) {{
+                return parseInt(timeStr);
+            }} else if (timeStr.includes('hour ago')) {{
+                return 60;
+            }} else if (timeStr.includes('day ago')) {{
+                return 24 * 60;
+            }} else if (timeStr.includes('minute ago')) {{
+                return 1;
+            }}
+            return 0; // "just now" or unrecognized format
+        }}
+    }});
+    </script>
 </body>
 </html>
         """
